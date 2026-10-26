@@ -1,0 +1,7 @@
+.git
+.env*
+.amp
+docs
+credentials.toml
+credentials*.toml
+/kyo-router

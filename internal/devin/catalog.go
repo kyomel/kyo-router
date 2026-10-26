@@ -1,0 +1,286 @@
+package devin
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"net/http"
+	"strings"
+
+	"google.golang.org/protobuf/proto"
+
+	"kyo-router/internal/devin/devinpb"
+)
+
+const catalogPath = "/exa.api_server_pb.ApiServerService/GetCliModelConfigs"
+
+const (
+	// DefaultContextTokens and DefaultMaxOutputTokens match devin-pi-prime's
+	// fallbacks for entries that omit the value.
+	DefaultContextTokens   = 128_000
+	DefaultMaxOutputTokens = 32_768
+)
+
+// ThinkingLevel is one effort suffix Devin bakes into a model uid.
+type ThinkingLevel string
+
+const (
+	ThinkingMinimal ThinkingLevel = "minimal"
+	ThinkingLow     ThinkingLevel = "low"
+	ThinkingMedium  ThinkingLevel = "medium"
+	ThinkingHigh    ThinkingLevel = "high"
+	ThinkingXHigh   ThinkingLevel = "xhigh"
+	ThinkingMax     ThinkingLevel = "max"
+	ThinkingNone    ThinkingLevel = "none"
+)
+
+// Thinking describes how one uid reasons. Level is the explicit suffix;
+// Defaulted marks a bare "thinking" uid, which runs at medium; Plain marks a
+// uid with no reasoning.
+type Thinking struct {
+	Level     ThinkingLevel
+	Defaulted bool
+	Plain     bool
+}
+
+// Effective returns the level a request runs when the uid has no explicit one.
+func (t Thinking) Effective() (ThinkingLevel, bool) {
+	if t.Level != "" {
+		return t.Level, true
+	}
+	if t.Defaulted {
+		return ThinkingMedium, true
+	}
+	return "", false
+}
+
+// Model is one usable Devin uid, verbatim.
+type Model struct {
+	UID             string
+	Label           string
+	Family          string
+	ContextTokens   int
+	MaxOutputTokens int
+	SupportsImages  bool
+	Thinking        Thinking
+}
+
+// Family folds the uid variants into one entry with a level -> uid map.
+// Plain and Defaulted keep the uids that carry no explicit level.
+type Family struct {
+	Name      string
+	Levels    map[ThinkingLevel]string
+	Plain     []string
+	Defaulted []string
+}
+
+// Catalog is the model list plus its family view.
+type Catalog struct {
+	Models   []Model
+	Families []Family
+}
+
+// Catalog fetches GetCliModelConfigs with the same key the chat calls use.
+// Pseudo models (adaptive, auto) and the fusion family are excluded; uids
+// stay verbatim.
+func (c *Connector) Catalog(ctx context.Context) (*Catalog, error) {
+	auth, err := c.tokens.Token(ctx)
+	if err != nil {
+		return nil, err
+	}
+	payload, err := proto.Marshal(&devinpb.GetCliModelConfigsRequest{
+		Metadata: newMetadata(c.credentials.APIKey, auth.UserJWT, c.ideVersion, c.extensionVersion),
+	})
+	if err != nil {
+		return nil, upstreamBad("encode_catalog", "cannot encode GetCliModelConfigs request", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		strings.TrimRight(auth.BaseURL, "/")+catalogPath, bytes.NewReader(payload))
+	if err != nil {
+		return nil, badRequest("catalog_request", "cannot build GetCliModelConfigs request")
+	}
+	req.Header.Set("Content-Type", "application/proto")
+	req.Header.Set("Connect-Protocol-Version", "1")
+	req.Header.Set("Accept", "*/*")
+
+	resp, err := c.transport.Do(req)
+	if err != nil {
+		return nil, transportError(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	if err != nil {
+		return nil, transportError(err)
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return nil, httpError(resp.StatusCode, resp.Header.Get("Retry-After"), c.clock.Now())
+	}
+
+	var decoded devinpb.GetCliModelConfigsResponse
+	if err := proto.Unmarshal(body, &decoded); err != nil {
+		return nil, upstreamBad("decode_catalog", "GetCliModelConfigs response is not protobuf", err)
+	}
+	catalog := catalogFromResponse(&decoded)
+	if len(catalog.Models) == 0 {
+		return nil, upstreamBad("empty_catalog", "Devin returned an empty model catalog for this account", nil)
+	}
+	return catalog, nil
+}
+
+// catalogFromResponse is the pure mapping, so tests need no HTTP.
+func catalogFromResponse(resp *devinpb.GetCliModelConfigsResponse) *Catalog {
+	models := make([]Model, 0, len(resp.GetClientModelConfigs()))
+	for _, config := range resp.GetClientModelConfigs() {
+		uid := strings.TrimSpace(config.GetModelUid())
+		if uid == "" || config.GetDisabled() || isExcludedUID(uid) {
+			continue
+		}
+		family := strings.TrimSpace(config.GetModelFamilyMetadata().GetModelFamilyLabel())
+		if family == "" {
+			family = strings.TrimSpace(config.GetModelInfo().GetModelFamilyUid())
+		}
+		if isExcludedName(family) {
+			continue
+		}
+		label := strings.TrimSpace(config.GetLabel())
+		if label == "" {
+			label = uid
+		}
+		models = append(models, Model{
+			UID:             uid,
+			Label:           label,
+			Family:          family,
+			ContextTokens:   positiveOr(int(config.GetMaxTokens()), DefaultContextTokens),
+			MaxOutputTokens: positiveOr(int(config.GetModelInfo().GetMaxOutputTokens()), DefaultMaxOutputTokens),
+			SupportsImages:  config.GetSupportsImages(),
+			Thinking:        thinkingOf(uid),
+		})
+	}
+	return &Catalog{Models: models, Families: buildFamilies(models)}
+}
+
+// isExcludedUID drops Devin's pseudo models: adaptive and auto are picker
+// entries, never served as a uid, and fusion is a separate product family.
+func isExcludedUID(uid string) bool {
+	return uid == "adaptive" || uid == "auto" || uid == "fusion" || strings.HasPrefix(uid, "fusion-")
+}
+
+func isExcludedName(name string) bool {
+	return isExcludedUID(strings.ToLower(strings.TrimSpace(name)))
+}
+
+func positiveOr(value, fallback int) int {
+	if value > 0 {
+		return value
+	}
+	return fallback
+}
+
+// Variant modifiers change speed or cache scope, not thinking effort.
+var variantModifiers = []string{"-fast", "-1m", "-priority", "-lightning"}
+
+var levelSuffixes = []struct {
+	suffix string
+	level  ThinkingLevel
+}{
+	{"-minimal", ThinkingMinimal},
+	{"-xhigh", ThinkingXHigh},
+	{"-medium", ThinkingMedium},
+	{"-high", ThinkingHigh},
+	{"-low", ThinkingLow},
+	{"-max", ThinkingMax},
+	{"-none", ThinkingNone},
+}
+
+// thinkingOf reads the effort from the uid suffix. A bare "thinking" suffix
+// carries no effort word, so it defaults to medium (docs/05-model-list-proposed).
+func thinkingOf(uid string) Thinking {
+	base := stripVariantModifiers(uid)
+	for _, candidate := range levelSuffixes {
+		if strings.HasSuffix(base, candidate.suffix) {
+			return Thinking{Level: candidate.level}
+		}
+	}
+	if strings.HasSuffix(base, "-thinking") {
+		return Thinking{Defaulted: true}
+	}
+	return Thinking{Plain: true}
+}
+
+func stripVariantModifiers(uid string) string {
+	for {
+		stripped := false
+		for _, modifier := range variantModifiers {
+			if strings.HasSuffix(uid, modifier) {
+				uid = strings.TrimSuffix(uid, modifier)
+				stripped = true
+				break
+			}
+		}
+		if !stripped {
+			return uid
+		}
+	}
+}
+
+func hasVariantModifier(uid string) bool {
+	return stripVariantModifiers(uid) != uid
+}
+
+func buildFamilies(models []Model) []Family {
+	index := make(map[string]*Family)
+	order := make([]string, 0)
+	for _, model := range models {
+		key := model.Family
+		if key == "" {
+			key = model.UID
+		}
+		family, ok := index[key]
+		if !ok {
+			family = &Family{Name: key, Levels: make(map[ThinkingLevel]string)}
+			index[key] = family
+			order = append(order, key)
+		}
+		switch {
+		case model.Thinking.Level != "":
+			existing, exists := family.Levels[model.Thinking.Level]
+			if !exists || preferLevelUID(model.UID, existing) {
+				family.Levels[model.Thinking.Level] = model.UID
+			}
+		case model.Thinking.Defaulted:
+			family.Defaulted = append(family.Defaulted, model.UID)
+		default:
+			family.Plain = append(family.Plain, model.UID)
+		}
+	}
+	families := make([]Family, 0, len(order))
+	for _, key := range order {
+		families = append(families, *index[key])
+	}
+	return families
+}
+
+// preferLevelUID keeps the map deterministic when a family has speed or cache
+// variants at the same level: the plain uid wins, then the lexical order.
+func preferLevelUID(candidate, existing string) bool {
+	candidateModifier := hasVariantModifier(candidate)
+	existingModifier := hasVariantModifier(existing)
+	if candidateModifier != existingModifier {
+		return !candidateModifier
+	}
+	return candidate < existing
+}
+
+// SortedLevels returns the levels a family maps, in canonical order. It exists
+// so callers (and tests) never iterate a map for output.
+func (f Family) SortedLevels() []ThinkingLevel {
+	levels := make([]ThinkingLevel, 0, len(f.Levels))
+	for _, level := range []ThinkingLevel{ThinkingMinimal, ThinkingLow, ThinkingMedium, ThinkingHigh, ThinkingXHigh, ThinkingMax, ThinkingNone} {
+		if _, ok := f.Levels[level]; ok {
+			levels = append(levels, level)
+		}
+	}
+	return levels
+}

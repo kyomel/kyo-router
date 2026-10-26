@@ -1,0 +1,164 @@
+// Minimal wire subset of Devin's Connect-RPC protos. Only the fields the
+// router sends or reads are here; every field number below was dumped once
+// from the jeopi-catalog TS descriptors (devin-pi-prime, 2026-10-26).
+//
+// The upstream packages are exa.auth_pb and exa.api_server_pb. The router calls
+// the procedures by their upstream paths (see devin.go), so this local package
+// name never reaches the wire.
+//
+// Regenerate from the repo root:
+//   protoc --go_out=. --go_opt=module=kyo-router internal/devin/proto/devin.proto
+syntax = "proto3";
+
+package exa.devin.v1;
+
+option go_package = "kyo-router/internal/devin/devinpb;devinpb";
+
+message Metadata {
+  string ide_name = 1;
+  string extension_version = 2;
+  string api_key = 3;
+  string locale = 4;
+  string ide_version = 7;
+  string extension_name = 12;
+  string user_jwt = 21;
+}
+
+message GetUserJwtRequest {
+  Metadata metadata = 1;
+}
+
+message GetUserJwtResponse {
+  string user_jwt = 1;
+  string custom_api_server_url = 2;
+}
+
+message GetCliModelConfigsRequest {
+  Metadata metadata = 1;
+}
+
+message GetCliModelConfigsResponse {
+  repeated ClientModelConfig client_model_configs = 1;
+}
+
+message ClientModelConfig {
+  string label = 1;
+  bool disabled = 4;
+  bool supports_images = 5;
+  int32 max_tokens = 18;
+  string model_uid = 22;
+  ModelInfo model_info = 23;
+  ModelFamilyMetadata model_family_metadata = 30;
+}
+
+message ModelInfo {
+  int32 max_output_tokens = 13;
+  string model_family_uid = 23;
+}
+
+message ModelFamilyMetadata {
+  string model_family_label = 1;
+}
+
+message GetChatMessageRequest {
+  Metadata metadata = 1;
+  string prompt = 2;
+  repeated ChatMessagePrompt chat_message_prompts = 3;
+  ChatMessageRequestType request_type = 7;
+  CompletionConfiguration configuration = 8;
+  bool disable_parallel_tool_calls = 11;
+  ChatToolChoice tool_choice = 12;
+  PromptCacheOptions system_prompt_cache_options = 13;
+  string cascade_id = 16;
+  ConversationalPlannerMode planner_mode = 20;
+  string chat_model_uid = 21;
+  string execution_id = 22;
+}
+
+message ChatMessagePrompt {
+  string message_id = 1;
+  ChatMessageSource source = 2;
+  string prompt = 3;
+  repeated ChatToolCall tool_calls = 6;
+  string tool_call_id = 7;
+}
+
+message ChatToolCall {
+  string id = 1;
+  string name = 2;
+  string arguments_json = 3;
+}
+
+message ChatToolChoice {
+  string option_name = 1;
+}
+
+message PromptCacheOptions {
+  CacheControlType type = 1;
+}
+
+message CompletionConfiguration {
+  uint64 num_completions = 1;
+  uint64 max_tokens = 2;
+  uint64 max_newlines = 3;
+  double temperature = 5;
+  double first_temperature = 6;
+  uint64 top_k = 7;
+  double top_p = 8;
+  repeated string stop_patterns = 9;
+  double fim_eot_prob_threshold = 11;
+}
+
+message GetChatMessageResponse {
+  string delta_text = 3;
+  StopReason stop_reason = 5;
+  repeated ChatToolCall delta_tool_calls = 6;
+  ModelUsageStats usage = 7;
+  string delta_thinking = 9;
+}
+
+message ModelUsageStats {
+  uint64 input_tokens = 2;
+  uint64 output_tokens = 3;
+  uint64 cache_write_tokens = 4;
+  uint64 cache_read_tokens = 5;
+}
+
+enum ChatMessageSource {
+  CHAT_MESSAGE_SOURCE_UNSPECIFIED = 0;
+  CHAT_MESSAGE_SOURCE_USER = 1;
+  CHAT_MESSAGE_SOURCE_SYSTEM = 2;
+  CHAT_MESSAGE_SOURCE_TOOL = 4;
+}
+
+enum ChatMessageRequestType {
+  CHAT_MESSAGE_REQUEST_TYPE_UNSPECIFIED = 0;
+  CHAT_MESSAGE_REQUEST_TYPE_CASCADE = 5;
+}
+
+enum ConversationalPlannerMode {
+  CONVERSATIONAL_PLANNER_MODE_UNSPECIFIED = 0;
+  CONVERSATIONAL_PLANNER_MODE_DEFAULT = 1;
+}
+
+enum CacheControlType {
+  CACHE_CONTROL_TYPE_UNSPECIFIED = 0;
+  CACHE_CONTROL_TYPE_EPHEMERAL = 1;
+}
+
+enum StopReason {
+  STOP_REASON_UNSPECIFIED = 0;
+  STOP_REASON_INCOMPLETE = 1;
+  STOP_REASON_STOP_PATTERN = 2;
+  STOP_REASON_MAX_TOKENS = 3;
+  STOP_REASON_MIN_LOG_PROB = 4;
+  STOP_REASON_MAX_NEWLINES = 5;
+  STOP_REASON_EXIT_SCOPE = 6;
+  STOP_REASON_NONFINITE_LOGIT_OR_PROB = 7;
+  STOP_REASON_FIRST_NON_WHITESPACE_LINE = 8;
+  STOP_REASON_PARTIAL = 9;
+  STOP_REASON_FUNCTION_CALL = 10;
+  STOP_REASON_CONTENT_FILTER = 11;
+  STOP_REASON_NON_INSERTION = 12;
+  STOP_REASON_ERROR = 13;
+}

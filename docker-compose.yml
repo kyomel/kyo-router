@@ -1,0 +1,13 @@
+services:
+  kyo-router:
+    build: .
+    image: kyo-router:dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - OPENCODE_GO_API_KEY=${OPENCODE_GO_API_KEY:?set in .env}
+      - DEVIN_API_KEY=${DEVIN_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+    volumes:
+      - ${HOME}/.local/share/devin/credentials.toml:/run/secrets/devin-credentials.toml:ro

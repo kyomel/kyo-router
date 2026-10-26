@@ -1,0 +1,193 @@
+// Command kyo-router serves one OpenAI-compatible endpoint in front of the
+// configured subscriptions. This file is wiring only: config -> catalog -> api.
+package main
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"kyo-router/internal/api"
+	"kyo-router/internal/catalog"
+	"kyo-router/internal/config"
+	"kyo-router/internal/connector"
+	"kyo-router/internal/deepseek"
+	"kyo-router/internal/devin"
+	"kyo-router/internal/opencode"
+	"kyo-router/internal/router"
+)
+
+func main() {
+	if err := run(); err != nil {
+		slog.Error("kyo-router stopped", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	cfg, err := config.Load(configPath())
+	if err != nil {
+		return err
+	}
+
+	cat, err := catalog.New(catalogModels(cfg.Models), time.Now().Unix())
+	if err != nil {
+		return err
+	}
+
+	backends, err := buildBackends(cfg)
+	if err != nil {
+		return err
+	}
+	rt := router.New(cat, backends, routeRules(cfg.Routes))
+
+	srv := &http.Server{
+		Addr:              cfg.Server.Bind,
+		Handler:           api.New(cat, rt, cfg.Server.APIKey.Reveal(), slog.Default()),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		// No WriteTimeout: SSE replies stay open for the whole completion (M1).
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- srv.ListenAndServe() }()
+	slog.Info("kyo-router listening", "bind", cfg.Server.Bind, "models", len(cat.Models()))
+
+	select {
+	case err := <-serveErr:
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return err
+	case <-ctx.Done():
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("shutdown: %w", err)
+	}
+	slog.Info("kyo-router stopped")
+	return nil
+}
+
+// configPath resolves the file path: flag, then env, then the working directory.
+func configPath() string {
+	path := flag.String("config", "", "path to config.toml (default $KYO_ROUTER_CONFIG or ./config.toml)")
+	flag.Parse()
+	if *path != "" {
+		return *path
+	}
+	if env := os.Getenv("KYO_ROUTER_CONFIG"); env != "" {
+		return env
+	}
+	return "config.toml"
+}
+
+// buildBackends constructs the connectors the configured models need. A
+// missing key for an enabled connector is fatal - the alternative is models
+// that resolve but can never serve.
+func buildBackends(cfg *config.Config) (map[string]connector.Connector, error) {
+	enabled := map[string]bool{}
+	for _, m := range cfg.Models {
+		enabled[m.Connector] = true
+	}
+	backends := map[string]connector.Connector{}
+
+	if enabled["deepseek"] {
+		ds, err := deepseek.New(deepseek.Options{
+			APIKey:  cfg.Connectors.DeepSeek.APIKey.Reveal(),
+			BaseURL: cfg.Connectors.DeepSeek.BaseURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		backends["deepseek"] = ds
+	}
+	if enabled["opencode"] {
+		// Responses-protocol upstreams take the other endpoint; the set comes
+		// from the pinned protocol per model (02-connectors.md).
+		var responsesModels []string
+		for _, m := range cfg.Models {
+			if m.Connector == "opencode" && m.Protocol == "responses" {
+				responsesModels = append(responsesModels, m.Upstream)
+			}
+		}
+		oc, err := opencode.New(opencode.Options{
+			APIKey:          cfg.Connectors.OpenCode.APIKey.Reveal(),
+			BaseURL:         cfg.Connectors.OpenCode.BaseURL,
+			SessionMode:     opencode.SessionMode(cfg.Connectors.OpenCode.SessionHeaderMode),
+			ResponsesModels: responsesModels,
+		})
+		if err != nil {
+			return nil, err
+		}
+		backends["opencode"] = oc
+	}
+	if enabled["devin"] {
+		// LoadCredentials resolves env, key file, then the CLI credentials file
+		// and skips agent-api keys at every step. A custom api_key_env name is
+		// surfaced as DEVIN_API_KEY for the lookup.
+		lookup := os.Getenv
+		if name := cfg.Connectors.Devin.APIKeyEnv; name != "" && name != "DEVIN_API_KEY" {
+			lookup = func(key string) string {
+				if key == "DEVIN_API_KEY" {
+					return os.Getenv(name)
+				}
+				return os.Getenv(key)
+			}
+		}
+		creds, err := devin.LoadCredentials(lookup, devin.CredentialFiles{
+			CLIFile: cfg.Connectors.Devin.CredentialsPath,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("devin credentials: %w", err)
+		}
+		dev, err := devin.New(devin.Options{
+			Credentials:      creds,
+			IDEVersion:       cfg.Connectors.Devin.IDEVersion,
+			ExtensionVersion: cfg.Connectors.Devin.ExtensionVersion,
+			JWTRefreshMargin: cfg.Connectors.Devin.JWTRefreshMargin.Value(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		backends["devin"] = dev
+	}
+	return backends, nil
+}
+
+func routeRules(routes []config.Route) []router.Rule {
+	rules := make([]router.Rule, 0, len(routes))
+	for _, r := range routes {
+		rules = append(rules, router.Rule{Match: r.Match, Fallbacks: r.Fallbacks})
+	}
+	return rules
+}
+
+func catalogModels(configured []config.Model) []catalog.Model {
+	models := make([]catalog.Model, 0, len(configured))
+	for _, m := range configured {
+		models = append(models, catalog.Model{
+			ID:        m.ID,
+			Connector: m.Connector,
+			Upstream:  m.Upstream,
+			// Config validated the value against the catalog protocol set, so
+			// this conversion cannot introduce an unknown protocol.
+			Protocol: catalog.Protocol(m.Protocol),
+			Features: m.Features,
+			Aliases:  m.Aliases,
+		})
+	}
+	return models
+}
