@@ -10,7 +10,9 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 
@@ -22,6 +24,7 @@ import (
 const (
 	chatPath      = "/chat/completions"
 	responsesPath = "/responses"
+	modelsPath    = "/models"
 )
 
 // Transport is the HTTP seam. *http.Client satisfies it.
@@ -169,6 +172,45 @@ func (c *Connector) session() string {
 		return c.fixedSession
 	}
 	return newUUID()
+}
+
+// Models fetches the live OpenCode Go model IDs from GET /models.
+func (c *Connector) Models(ctx context.Context) ([]string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+modelsPath, nil)
+	if err != nil {
+		return nil, badRequest("build_request", "cannot build models request")
+	}
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	resp, err := c.transport.Do(req)
+	if err != nil {
+		return nil, transportError(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return nil, upstreamHTTPError(resp)
+	}
+	var list struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&list); err != nil {
+		return nil, &connector.Error{
+			Kind:    connector.KindUpstreamBad,
+			Code:    "decode_models",
+			Message: "response is not a model list",
+			Err:     err,
+		}
+	}
+	ids := make([]string, 0, len(list.Data))
+	for _, item := range list.Data {
+		if id := strings.TrimSpace(item.ID); id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
 }
 
 func newUUID() string {

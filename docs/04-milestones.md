@@ -3,8 +3,8 @@
 Status 2026-10-26: M0-M2 delivered and verified live (three connectors
 serve through /v1/chat/completions). M3 partial: internal/router chain +
 Kind-table retries + pre-first-byte failover, slog request log, optional
-server Bearer auth, README. Open: /v1/responses inbound, soak test, timeouts
-review, discovery-pin catalog refresh.
+server Bearer auth, README, discovery-pin catalog refresh (`kyo-router discover`).
+Open: /v1/responses inbound, soak test, timeouts review.
 
 ## Pair note - ordering
 

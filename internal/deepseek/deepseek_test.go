@@ -211,3 +211,31 @@ func TestNewRejectsEmptyOptions(t *testing.T) {
 		t.Fatal("New accepted empty base url")
 	}
 }
+
+func TestModelsList(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != modelsPath {
+			t.Errorf("request = %s %s, want GET %s", r.Method, r.URL.Path, modelsPath)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer sk_test" {
+			t.Errorf("authorization = %q", got)
+		}
+		_, _ = w.Write([]byte(`{"data":[{"id":"deepseek-flash","input_modalities":["text","image"],"effort":{"supported_levels":["low","high","max"]}},{"id":"deepseek-v4-pro","input_modalities":["text"],"effort":{"supported_levels":["low","high","max"]}}]}`))
+	}))
+	defer server.Close()
+
+	conn := newTestConnector(t, server)
+	got, err := conn.Models(context.Background())
+	if err != nil {
+		t.Fatalf("Models: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("models = %d, want 2", len(got))
+	}
+	if !got[0].SupportsImages || !got[0].SupportsEffort || got[0].ID != "deepseek-flash" {
+		t.Errorf("got[0] = %+v", got[0])
+	}
+	if got[1].SupportsImages || !got[1].SupportsEffort || got[1].ID != "deepseek-v4-pro" {
+		t.Errorf("got[1] = %+v", got[1])
+	}
+}

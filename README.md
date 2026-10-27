@@ -156,6 +156,17 @@ Aliases (provider-prefixed short names) also appear in `/v1/models`: `devin/haik
 
 Route fallbacks keep canonical ids. Aliases are a client surface, not a routing shortcut.
 
+## Catalog refresh (`discover`)
+
+Refresh the pinned `[[model]]` catalog against all three upstreams while preserving existing entries, protocols, and aliases:
+
+```
+docker compose run --rm kyo-router discover -config /etc/kyo-router/config.toml
+docker compose run --rm kyo-router discover -config /etc/kyo-router/config.toml -write && docker compose restart kyo-router
+```
+
+Omit `-write` to run a dry-run diff only.
+
 ## Development
 
 ```

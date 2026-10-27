@@ -8,8 +8,11 @@ package deepseek
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"kyo-router/internal/connector"
@@ -17,7 +20,10 @@ import (
 	"kyo-router/internal/oai"
 )
 
-const chatPath = "/chat/completions"
+const (
+	chatPath   = "/chat/completions"
+	modelsPath = "/models"
+)
 
 // Transport is the HTTP seam. *http.Client satisfies it.
 type Transport interface {
@@ -118,4 +124,55 @@ func classifyTranslate(err error) error {
 		return err
 	}
 	return transportError(err)
+}
+
+// DiscoveredModel holds the capabilities DeepSeek reports on GET /models.
+type DiscoveredModel struct {
+	ID             string
+	SupportsImages bool
+	SupportsEffort bool
+}
+
+// Models fetches the live DeepSeek model list from GET /models.
+func (c *Connector) Models(ctx context.Context) ([]DiscoveredModel, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+modelsPath, nil)
+	if err != nil {
+		return nil, badRequest("build_request", "cannot build models request")
+	}
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	resp, err := c.transport.Do(req)
+	if err != nil {
+		return nil, transportError(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return nil, upstreamHTTPError(resp)
+	}
+	var list struct {
+		Data []struct {
+			ID              string   `json:"id"`
+			InputModalities []string `json:"input_modalities"`
+			Effort          *struct {
+				SupportedLevels []string `json:"supported_levels"`
+			} `json:"effort"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&list); err != nil {
+		return nil, upstreamBad("decode_models", "response is not a model list", err)
+	}
+	out := make([]DiscoveredModel, 0, len(list.Data))
+	for _, item := range list.Data {
+		id := strings.TrimSpace(item.ID)
+		if id == "" {
+			continue
+		}
+		out = append(out, DiscoveredModel{
+			ID:             id,
+			SupportsImages: slices.Contains(item.InputModalities, "image"),
+			SupportsEffort: item.Effort != nil && len(item.Effort.SupportedLevels) > 0,
+		})
+	}
+	return out, nil
 }

@@ -404,3 +404,79 @@ func TestLoadAcceptsSessionHeaderModes(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeModelsIdempotentAndPreservesPins(t *testing.T) {
+	pinned := []Model{
+		{
+			ID:        "devin/claude-haiku-5-5-low",
+			Connector: "devin",
+			Upstream:  "claude-haiku-5-5-low",
+			Protocol:  "devin",
+			Features:  []string{"images", "thinking"},
+			Aliases:   []string{"devin/haiku"},
+		},
+		{
+			ID:        "opencode/glm-5.3",
+			Connector: "opencode",
+			Upstream:  "glm-5.3",
+			Protocol:  "chat",
+			Aliases:   []string{"opencode/glm"},
+		},
+	}
+	discovered := map[string][]Model{
+		"opencode": {
+			{ID: "opencode/grok-4.7", Connector: "opencode", Upstream: "grok-4.7", Protocol: "responses"},
+		},
+		"deepseek": {
+			{ID: "deepseek/deepseek-flash", Connector: "deepseek", Upstream: "deepseek-flash", Protocol: "chat", Features: []string{"images", "thinking"}},
+		},
+	}
+
+	merged, diff := MergeModels(pinned, discovered)
+	if !diff.Changed {
+		t.Fatal("first merge Changed = false, want true")
+	}
+	if len(diff.Added) != 2 || diff.Added[0] != "deepseek/deepseek-flash" || diff.Added[1] != "opencode/grok-4.7" {
+		t.Errorf("added = %v, want sorted additions", diff.Added)
+	}
+	if len(diff.MissingPinned) != 1 || diff.MissingPinned[0] != "opencode/glm-5.3" {
+		t.Errorf("missing_pinned = %v, want [opencode/glm-5.3] (devin was not in discovered map so not flagged)", diff.MissingPinned)
+	}
+	if len(merged) != 4 || merged[0].Aliases[0] != "devin/haiku" || merged[1].Aliases[0] != "opencode/glm" {
+		t.Errorf("merged = %+v, want pinned entries preserved first", merged)
+	}
+
+	// Second run with the same discovered set must be a no-op (idempotent).
+	merged2, diff2 := MergeModels(merged, discovered)
+	if diff2.Changed || len(diff2.Added) != 0 {
+		t.Errorf("second merge diff = %+v, want no change", diff2)
+	}
+	if len(merged2) != len(merged) {
+		t.Errorf("second merge len = %d, want %d", len(merged2), len(merged))
+	}
+}
+
+func TestWriteAtomicRoundTrip(t *testing.T) {
+	t.Setenv("OPENCODE_GO_API_KEY", "oc_sk_test")
+	t.Setenv("DEVIN_API_KEY", "")
+	t.Setenv("DEEPSEEK_API_KEY", "sk_test")
+
+	dir := t.TempDir()
+	cred := writeFile(t, dir, "credentials.toml", "")
+	path := writeFile(t, dir, "config.toml", fmt.Sprintf(baseConfig, cred)+deepseekSection)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("initial Load: %v", err)
+	}
+	if err := WriteAtomic(path, cfg); err != nil {
+		t.Fatalf("WriteAtomic: %v", err)
+	}
+	reloaded, err := Load(path)
+	if err != nil {
+		t.Fatalf("reload after WriteAtomic: %v", err)
+	}
+	if len(reloaded.Models) != len(cfg.Models) || reloaded.Models[0].Aliases[0] != "devin/haiku" {
+		t.Errorf("reloaded models = %+v", reloaded.Models)
+	}
+}

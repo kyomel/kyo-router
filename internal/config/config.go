@@ -4,9 +4,14 @@
 package config
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -25,7 +30,7 @@ type Config struct {
 
 type Server struct {
 	Bind             string `toml:"bind"`
-	RequireAPIKeyEnv string `toml:"require_api_key_env"`
+	RequireAPIKeyEnv string `toml:"require_api_key_env,omitempty"`
 	APIKey           Secret `toml:"-"`
 }
 
@@ -75,10 +80,10 @@ type Model struct {
 	Connector string   `toml:"connector"`
 	Upstream  string   `toml:"upstream"`
 	Protocol  string   `toml:"protocol"`
-	Features  []string `toml:"features"`
+	Features  []string `toml:"features,omitempty"`
 	// Aliases are extra public ids for the same model, each inside the
 	// connector's own namespace (devin/, opencode/).
-	Aliases []string `toml:"aliases"`
+	Aliases []string `toml:"aliases,omitempty"`
 }
 
 type Route struct {
@@ -140,6 +145,10 @@ func (d *Duration) UnmarshalText(text []byte) error {
 	}
 	*d = Duration(parsed)
 	return nil
+}
+
+func (d Duration) MarshalText() ([]byte, error) {
+	return []byte(time.Duration(d).String()), nil
 }
 
 func (c *Config) validate() error {
@@ -298,4 +307,93 @@ func (c *Config) validateDevin() error {
 			"%s is a directory; mount the credentials file, not its parent", d.CredentialsPath)
 	}
 	return nil
+}
+
+// MergeDiff summarizes what changed between the pinned list and live discovery.
+type MergeDiff struct {
+	Added         []string
+	MissingPinned []string
+	Changed       bool
+}
+
+// MergeModels merges discovered models per connector into the pinned list.
+// Existing entries keep their protocol, features, and aliases untouched.
+func MergeModels(pinned []Model, discovered map[string][]Model) ([]Model, MergeDiff) {
+	liveByConnector := make(map[string]map[string]Model, len(discovered))
+	for conn, list := range discovered {
+		m := make(map[string]Model, len(list))
+		for _, item := range list {
+			m[item.ID] = item
+		}
+		liveByConnector[conn] = m
+	}
+
+	seen := make(map[string]bool, len(pinned))
+	merged := make([]Model, 0, len(pinned))
+	var diff MergeDiff
+
+	for _, existing := range pinned {
+		seen[existing.ID] = true
+		merged = append(merged, existing)
+		if live, ok := liveByConnector[existing.Connector]; ok {
+			if _, stillThere := live[existing.ID]; !stillThere {
+				diff.MissingPinned = append(diff.MissingPinned, existing.ID)
+			}
+		}
+	}
+
+	var additions []Model
+	for _, list := range discovered {
+		for _, item := range list {
+			if !seen[item.ID] {
+				seen[item.ID] = true
+				additions = append(additions, item)
+			}
+		}
+	}
+	slices.SortFunc(additions, func(a, b Model) int {
+		if a.Connector != b.Connector {
+			return strings.Compare(a.Connector, b.Connector)
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+	for _, add := range additions {
+		merged = append(merged, add)
+		diff.Added = append(diff.Added, add.ID)
+	}
+	diff.Changed = len(diff.Added) > 0
+	return merged, diff
+}
+
+// WriteAtomic encodes cfg to a sibling temp file and renames it over path.
+// When path is a single-file container bind mount (where creating a sibling in
+// /etc or renaming over the mountpoint returns EACCES/EBUSY), it falls back to
+// writing the encoded bytes in place.
+func WriteAtomic(path string, cfg *Config) error {
+	var buf bytes.Buffer
+	if err := toml.NewEncoder(&buf).Encode(cfg); err != nil {
+		return fmt.Errorf("encode config: %w", err)
+	}
+	tmp := filepath.Clean(path) + ".tmp"
+	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
+		if isBindMountFallback(err) {
+			return os.WriteFile(path, buf.Bytes(), 0o600)
+		}
+		return fmt.Errorf("write temp config: %w", err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		if isBindMountFallback(err) {
+			return os.WriteFile(path, buf.Bytes(), 0o600)
+		}
+		return fmt.Errorf("rename config: %w", err)
+	}
+	return nil
+}
+
+func isBindMountFallback(err error) bool {
+	return errors.Is(err, syscall.EBUSY) ||
+		errors.Is(err, syscall.EACCES) ||
+		errors.Is(err, syscall.EPERM) ||
+		errors.Is(err, syscall.EXDEV)
 }

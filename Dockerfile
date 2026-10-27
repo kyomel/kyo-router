@@ -9,4 +9,5 @@ FROM gcr.io/distroless/static:nonroot
 COPY --from=build /kyo-router /kyo-router
 COPY --from=build /src/config.toml /etc/kyo-router/config.toml
 USER nonroot
-ENTRYPOINT ["/kyo-router", "-config", "/etc/kyo-router/config.toml"]
+ENTRYPOINT ["/kyo-router"]
+CMD ["-config", "/etc/kyo-router/config.toml"]
