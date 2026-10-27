@@ -338,3 +338,66 @@ func TestListModelsShape(t *testing.T) {
 		})
 	}
 }
+
+func TestChatCompletionsContentParts(t *testing.T) {
+	fake := &fakeConnector{events: []models.StreamEvent{{Type: models.EventDone, FinishReason: "stop"}}}
+	h := newHandlerWithBackends(t, map[string]connector.Connector{"deepseek": fake})
+
+	// Real clients (pi, prime) send content as an array of parts.
+	rec := do(t, h, http.MethodPost, "/v1/chat/completions",
+		`{"model":"deepseek/deepseek-flash","messages":[{"role":"user","content":[{"type":"text","text":"hi"},{"type":"text","text":" there"}]}]}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+	if fake.gotReq.Messages[0].Content != "hi there" {
+		t.Errorf("content = %q, want joined parts", fake.gotReq.Messages[0].Content)
+	}
+}
+
+func TestChatCompletionsDeveloperAndTools(t *testing.T) {
+	fake := &fakeConnector{events: []models.StreamEvent{{Type: models.EventDone, FinishReason: "stop"}}}
+	h := newHandlerWithBackends(t, map[string]connector.Connector{"deepseek": fake})
+
+	rec := do(t, h, http.MethodPost, "/v1/chat/completions",
+		`{"model":"deepseek/deepseek-flash","messages":[{"role":"developer","content":"rules"},{"role":"user","content":"hi"}],`+
+			`"tools":[{"type":"function","function":{"name":"lookup","description":"d","parameters":{"type":"object"}}}],`+
+			`"tool_choice":"auto"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+	if fake.gotReq.Messages[0].Role != models.RoleDeveloper {
+		t.Errorf("role = %q, want developer preserved canonically", fake.gotReq.Messages[0].Role)
+	}
+	if len(fake.gotReq.Tools) != 1 || fake.gotReq.Tools[0].Function.Name != "lookup" {
+		t.Errorf("tools = %+v, want one forwarded tool", fake.gotReq.Tools)
+	}
+	if string(fake.gotReq.ToolChoice) != `"auto"` {
+		t.Errorf("tool_choice = %s, want \"auto\"", fake.gotReq.ToolChoice)
+	}
+}
+
+func TestChatCompletionsToolCallHistory(t *testing.T) {
+	fake := &fakeConnector{events: []models.StreamEvent{{Type: models.EventDone, FinishReason: "stop"}}}
+	h := newHandlerWithBackends(t, map[string]connector.Connector{"deepseek": fake})
+
+	// Real clients replay assistant tool calls in the nested OpenAI shape.
+	rec := do(t, h, http.MethodPost, "/v1/chat/completions",
+		`{"model":"deepseek/deepseek-flash","messages":[`+
+			`{"role":"user","content":"hi"},`+
+			`{"role":"assistant","content":"","tool_calls":[{"id":"call_1","type":"function","function":{"name":"lookup","arguments":"{\"q\":\"x\"}"}}]},`+
+			`{"role":"tool","tool_call_id":"call_1","content":"result"}]}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+	msgs := fake.gotReq.Messages
+	if len(msgs) != 3 {
+		t.Fatalf("messages = %d, want 3", len(msgs))
+	}
+	calls := msgs[1].ToolCalls
+	if len(calls) != 1 || calls[0].ID != "call_1" || calls[0].Name != "lookup" || calls[0].Arguments != `{"q":"x"}` {
+		t.Errorf("assistant tool calls = %+v, want nested function decoded", calls)
+	}
+	if msgs[2].ToolCallID != "call_1" || msgs[2].Content != "result" {
+		t.Errorf("tool result = %+v", msgs[2])
+	}
+}

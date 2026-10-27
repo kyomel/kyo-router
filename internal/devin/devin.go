@@ -235,7 +235,7 @@ func buildPrompts(messages []models.Message, cascadeID string) (string, []*devin
 	prompts := make([]*devinpb.ChatMessagePrompt, 0, len(messages))
 	for index, message := range messages {
 		switch message.Role {
-		case models.RoleSystem:
+		case models.RoleSystem, models.RoleDeveloper:
 			if strings.TrimSpace(message.Content) != "" {
 				systemParts = append(systemParts, message.Content)
 			}

@@ -2,3 +2,4 @@
 credentials.toml
 credentials*.toml
 /kyo-router
+.serena

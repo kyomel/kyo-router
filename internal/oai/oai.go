@@ -19,6 +19,10 @@ import (
 type RequestOptions struct {
 	StreamOptions   bool // send stream_options{include_usage} when Stream
 	ReasoningEffort bool // forward models.ChatRequest.ReasoningEffort
+	// ReasoningEchoBack synthesizes a placeholder reasoning_content on
+	// assistant history messages that lost it. DeepSeek thinking mode
+	// rejects requests whose replayed tool-call turns omit the field.
+	ReasoningEchoBack bool
 }
 
 type streamOptions struct {
@@ -31,6 +35,7 @@ type wireMessage struct {
 	Name       string         `json:"name,omitempty"`
 	ToolCallID string         `json:"tool_call_id,omitempty"`
 	ToolCalls  []wireToolCall `json:"tool_calls,omitempty"`
+	Reasoning  string         `json:"reasoning_content,omitempty"`
 }
 
 type wireToolCall struct {
@@ -43,14 +48,16 @@ type wireToolCall struct {
 }
 
 type wireRequest struct {
-	Model           string         `json:"model"`
-	Messages        []wireMessage  `json:"messages"`
-	Stream          bool           `json:"stream"`
-	StreamOptions   *streamOptions `json:"stream_options,omitempty"`
-	Temperature     *float64       `json:"temperature,omitempty"`
-	MaxTokens       *int           `json:"max_tokens,omitempty"`
-	Stop            []string       `json:"stop,omitempty"`
-	ReasoningEffort *string        `json:"reasoning_effort,omitempty"`
+	Model           string          `json:"model"`
+	Messages        []wireMessage   `json:"messages"`
+	Stream          bool            `json:"stream"`
+	StreamOptions   *streamOptions  `json:"stream_options,omitempty"`
+	Temperature     *float64        `json:"temperature,omitempty"`
+	MaxTokens       *int            `json:"max_tokens,omitempty"`
+	Stop            []string        `json:"stop,omitempty"`
+	Tools           []models.Tool   `json:"tools,omitempty"`
+	ToolChoice      json.RawMessage `json:"tool_choice,omitempty"`
+	ReasoningEffort *string         `json:"reasoning_effort,omitempty"`
 }
 
 // MarshalChatRequest encodes the canonical request to the chat/completions
@@ -59,11 +66,20 @@ type wireRequest struct {
 func MarshalChatRequest(upstream string, req models.ChatRequest, opts RequestOptions) ([]byte, error) {
 	messages := make([]wireMessage, 0, len(req.Messages))
 	for _, m := range req.Messages {
+		role := string(m.Role)
+		if m.Role == models.RoleDeveloper {
+			role = "system" // chat/completions wire predates the rename
+		}
+		reasoning := m.ReasoningContent
+		if opts.ReasoningEchoBack && m.Role == models.RoleAssistant && len(m.ToolCalls) > 0 && reasoning == "" {
+			reasoning = "reasoning not retained"
+		}
 		wire := wireMessage{
-			Role:       string(m.Role),
+			Role:       role,
 			Content:    m.Content,
 			Name:       m.Name,
 			ToolCallID: m.ToolCallID,
+			Reasoning:  reasoning,
 		}
 		for _, call := range m.ToolCalls {
 			tc := wireToolCall{ID: call.ID, Type: "function"}
@@ -80,6 +96,8 @@ func MarshalChatRequest(upstream string, req models.ChatRequest, opts RequestOpt
 		Temperature: req.Temperature,
 		MaxTokens:   req.MaxTokens,
 		Stop:        req.Stop,
+		Tools:       req.Tools,
+		ToolChoice:  req.ToolChoice,
 	}
 	if req.Stream && opts.StreamOptions {
 		wire.StreamOptions = &streamOptions{IncludeUsage: true}

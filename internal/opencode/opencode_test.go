@@ -217,3 +217,37 @@ func TestNewRejectsBadOptions(t *testing.T) {
 }
 
 var _ = errors.As
+
+func TestResponsesRequestTools(t *testing.T) {
+	tool := models.Tool{Type: "function"}
+	tool.Function.Name = "lookup"
+	tool.Function.Description = "find things"
+	tool.Function.Parameters = json.RawMessage(`{"type":"object"}`)
+	req := models.ChatRequest{
+		Messages:   chatMessages(),
+		Tools:      []models.Tool{tool},
+		ToolChoice: json.RawMessage(`"auto"`),
+	}
+
+	body, err := marshalResponsesRequest("grok-4.7", req)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var wire responsesRequest
+	if err := json.Unmarshal(body, &wire); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(wire.Tools) != 1 {
+		t.Fatalf("tools = %d, want 1", len(wire.Tools))
+	}
+	got := wire.Tools[0]
+	if got.Type != "function" || got.Name != "lookup" || got.Description != "find things" {
+		t.Errorf("tool = %+v, want flattened function fields", got)
+	}
+	if string(got.Parameters) != `{"type":"object"}` {
+		t.Errorf("parameters = %s", got.Parameters)
+	}
+	if string(wire.ToolChoice) != `"auto"` {
+		t.Errorf("tool_choice = %s, want \"auto\"", wire.ToolChoice)
+	}
+}

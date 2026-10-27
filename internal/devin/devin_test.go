@@ -467,3 +467,20 @@ func TestChatTokenErrorIsReturned(t *testing.T) {
 		t.Fatalf("err = %v, want the token error", err)
 	}
 }
+
+func TestBuildPromptsDeveloperRole(t *testing.T) {
+	system, prompts, err := buildPrompts([]models.Message{
+		{Role: models.RoleDeveloper, Content: "dev rules"},
+		{Role: models.RoleSystem, Content: "sys rules"},
+		{Role: models.RoleUser, Content: "hi"},
+	}, "cascade-1")
+	if err != nil {
+		t.Fatalf("buildPrompts: %v", err)
+	}
+	if system != "dev rules\n\nsys rules" {
+		t.Errorf("system = %q, want both parts joined", system)
+	}
+	if len(prompts) != 1 || prompts[0].GetPrompt() != "hi" {
+		t.Errorf("prompts = %+v, want one user turn", prompts)
+	}
+}

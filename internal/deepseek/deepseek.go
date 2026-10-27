@@ -70,8 +70,9 @@ func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRe
 	}
 
 	payload, err := oai.MarshalChatRequest(upstream, req, oai.RequestOptions{
-		StreamOptions:   true,
-		ReasoningEffort: true,
+		StreamOptions:     true,
+		ReasoningEffort:   true,
+		ReasoningEchoBack: true,
 	})
 	if err != nil {
 		return badRequest("encode_request", "cannot encode chat request")

@@ -37,7 +37,17 @@ type responsesRequest struct {
 	Stream          bool             `json:"stream"`
 	Temperature     *float64         `json:"temperature,omitempty"`
 	MaxOutputTokens *int             `json:"max_output_tokens,omitempty"`
+	Tools           []responsesTool  `json:"tools,omitempty"`
+	ToolChoice      json.RawMessage  `json:"tool_choice,omitempty"`
 	Reasoning       *responsesReason `json:"reasoning,omitempty"`
+}
+
+// responsesTool flattens the chat/completions function wrapper.
+type responsesTool struct {
+	Type        string          `json:"type"`
+	Name        string          `json:"name"`
+	Description string          `json:"description,omitempty"`
+	Parameters  json.RawMessage `json:"parameters,omitempty"`
 }
 
 type responsesReason struct {
@@ -81,6 +91,15 @@ func marshalResponsesRequest(upstream string, req models.ChatRequest) ([]byte, e
 		Stream:          req.Stream,
 		Temperature:     req.Temperature,
 		MaxOutputTokens: req.MaxTokens,
+		ToolChoice:      req.ToolChoice,
+	}
+	for _, t := range req.Tools {
+		wire.Tools = append(wire.Tools, responsesTool{
+			Type:        t.Type,
+			Name:        t.Function.Name,
+			Description: t.Function.Description,
+			Parameters:  t.Function.Parameters,
+		})
 	}
 	if req.ReasoningEffort != nil && *req.ReasoningEffort != "" {
 		wire.Reasoning = &responsesReason{Effort: *req.ReasoningEffort, Summary: "auto"}
