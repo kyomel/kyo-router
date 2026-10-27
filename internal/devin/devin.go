@@ -20,6 +20,7 @@ import (
 
 	"kyo-router/internal/connector"
 	"kyo-router/internal/devin/devinpb"
+	"kyo-router/internal/httpx"
 	"kyo-router/internal/models"
 )
 
@@ -35,7 +36,7 @@ const (
 type Options struct {
 	Credentials      Credentials
 	TokenSource      TokenSource
-	Transport        Transport
+	Transport        httpx.Transport
 	Clock            Clock
 	IDEVersion       string
 	ExtensionVersion string
@@ -49,7 +50,7 @@ type Options struct {
 type Connector struct {
 	credentials      Credentials
 	tokens           TokenSource
-	transport        Transport
+	transport        httpx.Transport
 	clock            Clock
 	ideVersion       string
 	extensionVersion string
@@ -121,15 +122,10 @@ func New(opts Options) (*Connector, error) {
 // Chat streams one completion. The upstream uid is passed verbatim, so the
 // effort suffix in the catalog id is the effort Devin runs.
 func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRequest, emit connector.Emit) error {
-	if strings.TrimSpace(upstream) == "" {
-		return badRequest("model_required", "upstream model id is required")
+	if err := connector.ValidateChat(upstream, req); err != nil {
+		return err
 	}
-	if len(req.Messages) == 0 {
-		return badRequest("messages_required", "at least one message is required")
-	}
-	if emit == nil {
-		emit = func(models.StreamEvent) error { return nil }
-	}
+	emit = connector.EnsureEmit(emit)
 
 	auth, err := c.tokens.Token(ctx)
 	if err != nil {
@@ -183,11 +179,11 @@ func (c *Connector) fail(err error) error {
 func (c *Connector) buildChatRequest(upstream string, req models.ChatRequest, userJWT string) (*devinpb.GetChatMessageRequest, error) {
 	cascadeID, err := newUUID()
 	if err != nil {
-		return nil, fmt.Errorf("devin: generate cascade id: %w", err)
+		return nil, connector.Internal("generate_cascade_id", "cannot generate cascade id", err)
 	}
 	executionID, err := newUUID()
 	if err != nil {
-		return nil, fmt.Errorf("devin: generate execution id: %w", err)
+		return nil, connector.Internal("generate_execution_id", "cannot generate execution id", err)
 	}
 	prompt, prompts, err := buildPrompts(req.Messages, cascadeID)
 	if err != nil {
@@ -261,7 +257,7 @@ func buildPrompts(messages []models.Message, cascadeID string) (string, []*devin
 			prompts = append(prompts, prompt)
 		case models.RoleTool:
 			if strings.TrimSpace(message.ToolCallID) == "" {
-				return "", nil, badRequest("tool_call_id_required", "tool message needs tool_call_id")
+				return "", nil, connector.BadRequest("tool_call_id_required", "tool message needs tool_call_id")
 			}
 			prompts = append(prompts, &devinpb.ChatMessagePrompt{
 				MessageId:  deterministicUUID(fmt.Sprintf("%s %d %s %s", cascadeID, index, message.Role, message.ToolCallID)),
@@ -270,7 +266,7 @@ func buildPrompts(messages []models.Message, cascadeID string) (string, []*devin
 				ToolCallId: message.ToolCallID,
 			})
 		default:
-			return "", nil, badRequest("unknown_role", "unknown message role "+string(message.Role))
+			return "", nil, connector.BadRequest("unknown_role", "unknown message role "+string(message.Role))
 		}
 	}
 	return strings.Join(systemParts, "\n\n"), prompts, nil

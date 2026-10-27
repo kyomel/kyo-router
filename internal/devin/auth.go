@@ -20,7 +20,9 @@ import (
 	"github.com/BurntSushi/toml"
 	"google.golang.org/protobuf/proto"
 
+	"kyo-router/internal/connector"
 	"kyo-router/internal/devin/devinpb"
+	"kyo-router/internal/httpx"
 )
 
 const (
@@ -259,12 +261,10 @@ func cleanAPIKey(raw, origin string) (string, error) {
 	return NormalizeSessionToken(trimmed), nil
 }
 
+// normalizeBaseURL cleans a source-provided URL. Empty stays empty so the
+// caller can layer a config fallback below the built-in default in New.
 func normalizeBaseURL(raw string) string {
-	trimmed := strings.TrimRight(strings.TrimSpace(raw), "/")
-	if trimmed == "" {
-		return DefaultAPIURL
-	}
-	return trimmed
+	return strings.TrimRight(strings.TrimSpace(raw), "/")
 }
 
 // Auth is one JWT plus the Connect host that issued it.
@@ -291,16 +291,10 @@ type systemClock struct{}
 
 func (systemClock) Now() time.Time { return time.Now() }
 
-// Transport is the HTTP seam. *http.Client satisfies it, as does the
-// connecthttp transport's HTTPClient.
-type Transport interface {
-	Do(*http.Request) (*http.Response, error)
-}
-
 // TokenSourceOptions builds the default JWT source.
 type TokenSourceOptions struct {
 	Credentials      Credentials
-	Transport        Transport
+	Transport        httpx.Transport
 	Clock            Clock
 	RefreshMargin    time.Duration
 	IDEVersion       string
@@ -358,7 +352,7 @@ type jwtFlight struct {
 
 type jwtSource struct {
 	credentials      Credentials
-	transport        Transport
+	transport        httpx.Transport
 	clock            Clock
 	refreshMargin    time.Duration
 	ideVersion       string
@@ -394,7 +388,7 @@ func (s *jwtSource) Token(ctx context.Context) (Auth, error) {
 				}
 				return Auth{}, flight.err
 			case <-ctx.Done():
-				return Auth{}, transportError(ctx.Err())
+				return Auth{}, connector.NetworkError(ctx.Err())
 			}
 		}
 		flight := &jwtFlight{done: make(chan struct{})}
@@ -429,13 +423,13 @@ func (s *jwtSource) fetch(ctx context.Context) (Auth, time.Time, error) {
 		Metadata: newMetadata(s.credentials.APIKey, "", s.ideVersion, s.extensionVersion),
 	})
 	if err != nil {
-		return Auth{}, time.Time{}, upstreamBad("encode_user_jwt", "cannot encode GetUserJwt request", err)
+		return Auth{}, time.Time{}, connector.UpstreamBad("encode_user_jwt", "cannot encode GetUserJwt request", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		strings.TrimRight(s.credentials.BaseURL, "/")+authPath, bytes.NewReader(payload))
 	if err != nil {
-		return Auth{}, time.Time{}, badRequest("auth_request", "cannot build GetUserJwt request")
+		return Auth{}, time.Time{}, connector.BadRequest("auth_request", "cannot build GetUserJwt request")
 	}
 	req.Header.Set("Content-Type", "application/proto")
 	req.Header.Set("Connect-Protocol-Version", "1")
@@ -443,13 +437,13 @@ func (s *jwtSource) fetch(ctx context.Context) (Auth, time.Time, error) {
 
 	resp, err := s.transport.Do(req)
 	if err != nil {
-		return Auth{}, time.Time{}, transportError(err)
+		return Auth{}, time.Time{}, connector.NetworkError(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 	if err != nil {
-		return Auth{}, time.Time{}, transportError(err)
+		return Auth{}, time.Time{}, connector.NetworkError(err)
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		return Auth{}, time.Time{}, httpError(resp.StatusCode, resp.Header.Get("Retry-After"), s.clock.Now())
@@ -459,14 +453,14 @@ func (s *jwtSource) fetch(ctx context.Context) (Auth, time.Time, error) {
 	if err := proto.Unmarshal(body, &decoded); err != nil {
 		unzipped, gzipErr := gunzip(body)
 		if gzipErr != nil {
-			return Auth{}, time.Time{}, upstreamBad("decode_user_jwt", "GetUserJwt response is not protobuf", err)
+			return Auth{}, time.Time{}, connector.UpstreamBad("decode_user_jwt", "GetUserJwt response is not protobuf", err)
 		}
 		if err := proto.Unmarshal(unzipped, &decoded); err != nil {
-			return Auth{}, time.Time{}, upstreamBad("decode_user_jwt", "GetUserJwt response is not protobuf", err)
+			return Auth{}, time.Time{}, connector.UpstreamBad("decode_user_jwt", "GetUserJwt response is not protobuf", err)
 		}
 	}
 	if decoded.GetUserJwt() == "" {
-		return Auth{}, time.Time{}, upstreamBad("empty_user_jwt", "GetUserJwt returned an empty user JWT", nil)
+		return Auth{}, time.Time{}, connector.UpstreamBad("empty_user_jwt", "GetUserJwt returned an empty user JWT", nil)
 	}
 
 	baseURL := s.credentials.BaseURL

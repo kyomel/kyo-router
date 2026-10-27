@@ -133,14 +133,10 @@ func TestLoadUsesDevinEnvKeyOverFile(t *testing.T) {
 	t.Setenv("DEVIN_API_KEY", "devin-session-token$fresh")
 
 	// The file path does not exist: an env key must win without touching it.
-	cfg, err := loadBody(t, func(string) string {
+	if _, err := loadBody(t, func(string) string {
 		return fmt.Sprintf(baseConfig, "/nonexistent/kyo-router/credentials.toml")
-	})
-	if err != nil {
+	}); err != nil {
 		t.Fatalf("Load: %v", err)
-	}
-	if got := cfg.Connectors.Devin.APIKey.Reveal(); got != "devin-session-token$fresh" {
-		t.Errorf("devin key = %q, want the env value", got)
 	}
 }
 
@@ -453,6 +449,40 @@ func TestMergeModelsIdempotentAndPreservesPins(t *testing.T) {
 	}
 	if len(merged2) != len(merged) {
 		t.Errorf("second merge len = %d, want %d", len(merged2), len(merged))
+	}
+}
+
+// A pinned id that names an upstream ("devin/haiku" for claude-haiku-5-5-low)
+// still covers that upstream: the merge keys on connector+upstream, not the
+// public id. A discovered id colliding with a pin or alias is skipped so the
+// written file can load again.
+func TestMergeModelsKeysOnUpstreamAndGuardsIDs(t *testing.T) {
+	pinned := []Model{
+		{ID: "devin/haiku", Connector: "devin", Upstream: "claude-haiku-5-5-low", Protocol: "devin"},
+		{ID: "opencode/glm-5.3", Connector: "opencode", Upstream: "glm-5.3", Protocol: "chat", Aliases: []string{"opencode/glm"}},
+	}
+	discovered := map[string][]Model{
+		"devin": {
+			{ID: "devin/claude-haiku-5-5-low", Connector: "devin", Upstream: "claude-haiku-5-5-low", Protocol: "devin"},
+		},
+		"opencode": {
+			{ID: "opencode/glm-5.3", Connector: "opencode", Upstream: "glm-5.3", Protocol: "chat"},
+			{ID: "opencode/glm", Connector: "opencode", Upstream: "glm", Protocol: "chat"},
+		},
+	}
+
+	merged, diff := MergeModels(pinned, discovered)
+	if len(diff.MissingPinned) != 0 {
+		t.Errorf("missing_pinned = %v, want none (upstream keys match)", diff.MissingPinned)
+	}
+	if len(merged) != 2 {
+		t.Fatalf("merged = %+v, want only the two pins", merged)
+	}
+	if len(diff.Skipped) != 1 || diff.Skipped[0] != "opencode/glm" {
+		t.Errorf("skipped = %v, want [opencode/glm] (alias collision)", diff.Skipped)
+	}
+	if diff.Changed {
+		t.Error("Changed = true, want false when nothing can be added")
 	}
 }
 

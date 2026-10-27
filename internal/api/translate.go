@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"kyo-router/internal/connector"
+	"kyo-router/internal/httpx"
 	"kyo-router/internal/models"
 )
 
@@ -150,16 +152,14 @@ func (e *streamEncoder) finish() {
 	if !e.started {
 		return
 	}
-	_, _ = e.w.Write([]byte("data: " + doneSentinel + "\n\n"))
+	_, _ = e.w.Write([]byte("data: " + httpx.Done + "\n\n"))
 	_ = e.flusher.Flush()
 }
 
 // fail writes an in-band error once headers already left.
-func (e *streamEncoder) fail(code, message string) {
-	_ = e.write(errorEnvelope{Error: errorDetail{Message: message, Type: "Upstream", Code: code}})
+func (e *streamEncoder) fail(kind connector.Kind, code, message string) {
+	_ = e.write(errorEnvelope{Error: errorDetail{Message: message, Type: string(kind), Code: code}})
 }
-
-const doneSentinel = "[DONE]"
 
 // completionBuilder folds canonical events into one non-streamed response.
 type completionBuilder struct {

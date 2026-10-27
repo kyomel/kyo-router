@@ -48,10 +48,12 @@ type modelList struct {
 }
 
 type modelObject struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
-	Created int64  `json:"created"`
-	OwnedBy string `json:"owned_by"`
+	ID       string   `json:"id"`
+	Object   string   `json:"object"`
+	Created  int64    `json:"created"`
+	OwnedBy  string   `json:"owned_by"`
+	Protocol string   `json:"protocol,omitempty"`
+	Features []string `json:"features,omitempty"`
 }
 
 func (s *Server) listModels(w http.ResponseWriter, _ *http.Request) {
@@ -59,9 +61,11 @@ func (s *Server) listModels(w http.ResponseWriter, _ *http.Request) {
 	data := make([]modelObject, 0, len(configured))
 	for _, m := range configured {
 		entry := modelObject{
-			Object:  "model",
-			Created: s.catalog.Created(),
-			OwnedBy: m.Connector,
+			Object:   "model",
+			Created:  s.catalog.Created(),
+			OwnedBy:  m.Connector,
+			Protocol: string(m.Protocol),
+			Features: m.Features,
 		}
 		entry.ID = m.ID
 		data = append(data, entry)
@@ -75,17 +79,17 @@ func (s *Server) listModels(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) chatCompletions(w http.ResponseWriter, r *http.Request) {
 	if !s.authorized(r) {
-		writeError(w, http.StatusUnauthorized, KindAuth, "unauthorized", "a valid Bearer token is required")
+		writeError(w, http.StatusUnauthorized, connector.KindAuth, "unauthorized", "a valid Bearer token is required")
 		return
 	}
 	var req models.ChatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, KindBadRequest, "invalid_json",
+		writeError(w, http.StatusBadRequest, connector.KindBadRequest, "invalid_json",
 			"request body is not valid JSON: "+err.Error())
 		return
 	}
 	if req.Model == "" {
-		writeError(w, http.StatusBadRequest, KindBadRequest, "model_required", "model is required")
+		writeError(w, http.StatusBadRequest, connector.KindBadRequest, "model_required", "model is required")
 		return
 	}
 
@@ -141,7 +145,7 @@ func (s *Server) stream(w http.ResponseWriter, r *http.Request, req models.ChatR
 		return result, nil
 	}
 	if errors.Is(err, catalog.ErrModelNotFound) {
-		writeError(w, http.StatusNotFound, KindBadRequest, "model_not_found", err.Error())
+		writeError(w, http.StatusNotFound, connector.KindBadRequest, "model_not_found", err.Error())
 		return result, err
 	}
 	if !encoder.started {
@@ -150,10 +154,10 @@ func (s *Server) stream(w http.ResponseWriter, r *http.Request, req models.ChatR
 	}
 	var connErr *connector.Error
 	if errors.As(err, &connErr) {
-		encoder.fail(connErr.Code, connErr.Message)
+		encoder.fail(connErr.Kind, connErr.Code, connErr.Message)
 		return result, err
 	}
-	encoder.fail("internal", err.Error())
+	encoder.fail(connector.KindUpstream, "internal", err.Error())
 	return result, err
 }
 
@@ -166,7 +170,7 @@ func (s *Server) complete(w http.ResponseWriter, r *http.Request, req models.Cha
 	})
 	if err != nil {
 		if errors.Is(err, catalog.ErrModelNotFound) {
-			writeError(w, http.StatusNotFound, KindBadRequest, "model_not_found", err.Error())
+			writeError(w, http.StatusNotFound, connector.KindBadRequest, "model_not_found", err.Error())
 		} else {
 			s.writeConnectorError(w, err)
 		}
@@ -199,6 +203,8 @@ func statusOfConnector(connErr *connector.Error) int {
 		return http.StatusTooManyRequests
 	case connector.KindBadRequest, connector.KindUnsupported:
 		return http.StatusBadRequest
+	case connector.KindInternal:
+		return http.StatusInternalServerError
 	case connector.KindUpstreamBad:
 		if connErr.Status >= 400 && connErr.Status < 500 {
 			return connErr.Status
@@ -224,9 +230,9 @@ func errorKind(err error) string {
 func (s *Server) writeConnectorError(w http.ResponseWriter, err error) {
 	var connErr *connector.Error
 	if !errors.As(err, &connErr) {
-		writeError(w, http.StatusInternalServerError, KindBadRequest, "internal", err.Error())
+		writeError(w, http.StatusInternalServerError, connector.KindBadRequest, "internal", err.Error())
 		return
 	}
 	status := statusOfConnector(connErr)
-	writeError(w, status, Kind(connErr.Kind), connErr.Code, connErr.Message)
+	writeError(w, status, connErr.Kind, connErr.Code, connErr.Message)
 }

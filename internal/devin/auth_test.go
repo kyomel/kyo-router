@@ -179,6 +179,17 @@ func TestLoadCredentialsOrder(t *testing.T) {
 		}
 	})
 
+	t.Run("a source without a server url leaves base empty for the config fallback", func(t *testing.T) {
+		lookup := envLookup(map[string]string{"DEVIN_API_KEY": "env-raw"})
+		creds, err := LoadCredentials(lookup, CredentialFiles{})
+		if err != nil {
+			t.Fatalf("LoadCredentials: %v", err)
+		}
+		if creds.BaseURL != "" {
+			t.Errorf("base url = %q, want empty so connectors.devin.base_url can apply", creds.BaseURL)
+		}
+	})
+
 	t.Run("an already prefixed key is not prefixed again", func(t *testing.T) {
 		lookup := envLookup(map[string]string{"DEVIN_API_KEY": SessionTokenPrefix + "raw"})
 		creds, err := LoadCredentials(lookup, CredentialFiles{})

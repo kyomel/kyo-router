@@ -3,18 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-)
 
-// Kind is the E-channel tag from docs/01-architecture.md. It travels in the
-// OpenAI error "type" field so clients and logs classify by tag, never by
-// message text. M0 can produce the first two; internal/connector adds the
-// upstream kinds in M1/M2.
-type Kind string
-
-const (
-	KindBadRequest  Kind = "BadRequest"
-	KindUnsupported Kind = "Unsupported"
-	KindAuth        Kind = "Auth"
+	"kyo-router/internal/connector"
 )
 
 type errorEnvelope struct {
@@ -24,11 +14,12 @@ type errorEnvelope struct {
 type errorDetail struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`
-	Param   string `json:"param,omitempty"`
 	Code    string `json:"code"`
 }
 
-func writeError(w http.ResponseWriter, status int, kind Kind, code, message string) {
+// writeError answers one error in the OpenAI shape. The kind travels in the
+// "type" field so clients and logs classify by tag, never by message text.
+func writeError(w http.ResponseWriter, status int, kind connector.Kind, code, message string) {
 	writeJSON(w, status, errorEnvelope{Error: errorDetail{
 		Message: message,
 		Type:    string(kind),

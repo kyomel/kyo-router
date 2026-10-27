@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"kyo-router/internal/connector"
+	"kyo-router/internal/httpx"
 	"kyo-router/internal/models"
 	"kyo-router/internal/oai"
 )
@@ -26,11 +27,6 @@ const (
 	responsesPath = "/responses"
 	modelsPath    = "/models"
 )
-
-// Transport is the HTTP seam. *http.Client satisfies it.
-type Transport interface {
-	Do(*http.Request) (*http.Response, error)
-}
 
 // SessionMode selects how x-opencode-session is filled.
 type SessionMode string
@@ -49,7 +45,7 @@ type Options struct {
 	BaseURL         string
 	SessionMode     SessionMode
 	ResponsesModels []string
-	Transport       Transport
+	Transport       httpx.Transport
 }
 
 // Connector speaks OpenCode Go's chat and responses surfaces.
@@ -59,7 +55,7 @@ type Connector struct {
 	sessionMode   SessionMode
 	fixedSession  string
 	responsesOnly map[string]bool
-	transport     Transport
+	transport     httpx.Transport
 }
 
 // New builds a connector; the key is required because every request carries it.
@@ -98,15 +94,10 @@ func New(opts Options) (*Connector, error) {
 
 // Chat runs one completion, picking the wire protocol from the upstream id.
 func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRequest, emit connector.Emit) error {
-	if strings.TrimSpace(upstream) == "" {
-		return badRequest("model_required", "upstream model id is required")
+	if err := connector.ValidateChat(upstream, req); err != nil {
+		return err
 	}
-	if len(req.Messages) == 0 {
-		return badRequest("messages_required", "at least one message is required")
-	}
-	if emit == nil {
-		emit = func(models.StreamEvent) error { return nil }
-	}
+	emit = connector.EnsureEmit(emit)
 
 	var payload []byte
 	var path string
@@ -119,12 +110,12 @@ func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRe
 		path = chatPath
 	}
 	if err != nil {
-		return badRequest("encode_request", "cannot encode chat request")
+		return connector.BadRequest("encode_request", "cannot encode chat request")
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, bytes.NewReader(payload))
 	if err != nil {
-		return badRequest("build_request", "cannot build chat request")
+		return connector.BadRequest("build_request", "cannot build chat request")
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -137,7 +128,7 @@ func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRe
 
 	resp, err := c.transport.Do(httpReq)
 	if err != nil {
-		return transportError(err)
+		return connector.NetworkError(err)
 	}
 	defer resp.Body.Close()
 
@@ -156,14 +147,28 @@ func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRe
 	} else {
 		translateErr = oai.TranslateCompletion(resp.Body, emit)
 	}
-	if translateErr != nil {
-		var connErr *connector.Error
-		if errors.As(translateErr, &connErr) {
-			return translateErr
-		}
-		return transportError(translateErr)
+	return connector.NormalizeStreamError(translateErr)
+}
+
+// responsesUpstreams lists upstream ids verified live to require /responses
+// (docs/02-connectors.md protocol split). DefaultProtocol consults it only to
+// seed protocol for newly discovered ids; the runtime split stays
+// config-driven through Options.ResponsesModels. Drop entries as GET /models
+// starts reporting protocol.
+var responsesUpstreams = map[string]bool{
+	"grok-4.6":                   true,
+	"grok-4.7":                   true,
+	"gpt-6-luna":                 true,
+	"muse-spark-1.3-contributor": true,
+}
+
+// DefaultProtocol returns the catalog protocol to pin for a newly discovered
+// upstream id. Unknown ids default to chat until verified against /responses.
+func DefaultProtocol(upstream string) string {
+	if responsesUpstreams[upstream] {
+		return "responses"
 	}
-	return nil
+	return "chat"
 }
 
 // session returns the header value per the configured mode.
@@ -178,13 +183,13 @@ func (c *Connector) session() string {
 func (c *Connector) Models(ctx context.Context) ([]string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+modelsPath, nil)
 	if err != nil {
-		return nil, badRequest("build_request", "cannot build models request")
+		return nil, connector.BadRequest("build_request", "cannot build models request")
 	}
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 
 	resp, err := c.transport.Do(req)
 	if err != nil {
-		return nil, transportError(err)
+		return nil, connector.NetworkError(err)
 	}
 	defer resp.Body.Close()
 
@@ -197,12 +202,7 @@ func (c *Connector) Models(ctx context.Context) ([]string, error) {
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&list); err != nil {
-		return nil, &connector.Error{
-			Kind:    connector.KindUpstreamBad,
-			Code:    "decode_models",
-			Message: "response is not a model list",
-			Err:     err,
-		}
+		return nil, connector.UpstreamBad("decode_models", "response is not a model list", err)
 	}
 	ids := make([]string, 0, len(list.Data))
 	for _, item := range list.Data {

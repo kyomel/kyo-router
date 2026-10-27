@@ -1,6 +1,3 @@
-// Package httpx holds the shared HTTP pieces every OpenAI-compatible
-// connector uses. The SSE scanner is its first member; backoff and the shared
-// client land with the OpenCode connector (docs/04-milestones.md, M1).
 package httpx
 
 import (

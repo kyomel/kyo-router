@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -15,13 +14,14 @@ import (
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
 	"kyo-router/internal/connector"
+	"kyo-router/internal/httpx"
 )
 
 // responseRecorder remembers the HTTP status and Retry-After of one RPC.
 // connect-go exposes the error-path status but not the response headers, so a
 // rate-limited chat call would otherwise lose its retry hint.
 type responseRecorder struct {
-	transport Transport
+	transport httpx.Transport
 
 	mu         sync.Mutex
 	status     int
@@ -54,15 +54,7 @@ func (r *responseRecorder) RetryAfter() string {
 // httpError maps a plain HTTP status to a connector Kind. The body is never
 // read for classification: only the status and the Retry-After header count.
 func httpError(status int, retryAfter string, now time.Time) *connector.Error {
-	kind := connector.KindUpstreamBad
-	switch {
-	case status == http.StatusUnauthorized || status == http.StatusForbidden:
-		kind = connector.KindAuth
-	case status == http.StatusTooManyRequests:
-		kind = connector.KindRateLimit
-	case status >= 500:
-		kind = connector.KindUpstream
-	}
+	kind := httpx.StatusKind(status)
 	err := &connector.Error{
 		Kind:    kind,
 		Code:    "http_" + strconv.Itoa(status),
@@ -105,7 +97,7 @@ func connectError(ctx context.Context, callInfo *connect.CallInfo, recorder *res
 		// retries instead of failing over at once.
 		var netErr net.Error
 		if errors.As(err, &netErr) {
-			return transportError(err)
+			return connector.NetworkError(err)
 		}
 		kind := connector.KindUpstreamBad
 		switch rpcErr.Code() {
@@ -125,38 +117,7 @@ func connectError(ctx context.Context, callInfo *connect.CallInfo, recorder *res
 			Err:     err,
 		}
 	}
-	return transportError(err)
-}
-
-// transportError tags a local transport failure. It is Network so the router
-// can retry it; a context error keeps its identity through Unwrap.
-func transportError(err error) error {
-	if err == nil {
-		return nil
-	}
-	code := "transport"
-	switch {
-	case errors.Is(err, context.Canceled):
-		code = "context_canceled"
-	case errors.Is(err, context.DeadlineExceeded):
-		code = "context_deadline"
-	case errors.Is(err, io.ErrUnexpectedEOF):
-		code = "unexpected_eof"
-	}
-	return &connector.Error{
-		Kind:    connector.KindNetwork,
-		Code:    code,
-		Message: err.Error(),
-		Err:     err,
-	}
-}
-
-func badRequest(code, message string) *connector.Error {
-	return &connector.Error{Kind: connector.KindBadRequest, Code: code, Message: message}
-}
-
-func upstreamBad(code, message string, err error) *connector.Error {
-	return &connector.Error{Kind: connector.KindUpstreamBad, Code: code, Message: message, Err: err}
+	return connector.NetworkError(err)
 }
 
 // parseRetryAfter reads both forms of Retry-After: delay seconds or HTTP date.

@@ -5,39 +5,22 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"kyo-router/internal/config"
-	"kyo-router/internal/deepseek"
-	"kyo-router/internal/devin"
 	"kyo-router/internal/opencode"
 )
-
-// knownOpenCodeResponses lists OpenCode upstream IDs verified to require /responses.
-var knownOpenCodeResponses = map[string]bool{
-	"grok-4.6":                   true,
-	"grok-4.7":                   true,
-	"gpt-6-luna":                 true,
-	"muse-spark-1.3-contributor": true,
-}
 
 func runDiscover(args []string) error {
 	fs := flag.NewFlagSet("discover", flag.ContinueOnError)
 	cfgFlag := fs.String("config", "", "path to config.toml (default $KYO_ROUTER_CONFIG or ./config.toml)")
-	writeFlag := fs.Bool("write", false, "write merged catalog back to config.toml")
+	writeFlag := fs.Bool("write", false, "write merged catalog back to config.toml (TOML comments are lost)")
 	timeoutFlag := fs.Duration("timeout", 30*time.Second, "discovery timeout")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	path := *cfgFlag
-	if path == "" {
-		path = os.Getenv("KYO_ROUTER_CONFIG")
-	}
-	if path == "" {
-		path = "config.toml"
-	}
+	path := resolveConfigPath(*cfgFlag)
 
 	cfg, err := config.Load(path)
 	if err != nil {
@@ -52,17 +35,24 @@ func runDiscover(args []string) error {
 
 	slog.Info("discovery finished",
 		"added", len(diff.Added),
+		"skipped", len(diff.Skipped),
 		"missing_pinned", len(diff.MissingPinned),
 		"total", len(merged),
 	)
 	for _, id := range diff.MissingPinned {
 		slog.Warn("pinned model missing from upstream", "id", id)
 	}
+	for _, id := range diff.Skipped {
+		slog.Warn("discovered model id collides with a pin or alias", "id", id)
+	}
 	if !*writeFlag || !diff.Changed {
 		return nil
 	}
 
 	cfg.Models = merged
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("merged config invalid, not writing: %w", err)
+	}
 	if err := config.WriteAtomic(path, cfg); err != nil {
 		return fmt.Errorf("write config: %w", err)
 	}
@@ -94,27 +84,7 @@ func fetchAllProviders(ctx context.Context, cfg *config.Config) map[string][]con
 }
 
 func discoverDevin(ctx context.Context, cfg *config.Config) ([]config.Model, error) {
-	lookup := os.Getenv
-	if name := cfg.Connectors.Devin.APIKeyEnv; name != "" && name != "DEVIN_API_KEY" {
-		lookup = func(key string) string {
-			if key == "DEVIN_API_KEY" {
-				return os.Getenv(name)
-			}
-			return os.Getenv(key)
-		}
-	}
-	creds, err := devin.LoadCredentials(lookup, devin.CredentialFiles{
-		CLIFile: cfg.Connectors.Devin.CredentialsPath,
-	})
-	if err != nil {
-		return nil, err
-	}
-	conn, err := devin.New(devin.Options{
-		Credentials:      creds,
-		IDEVersion:       cfg.Connectors.Devin.IDEVersion,
-		ExtensionVersion: cfg.Connectors.Devin.ExtensionVersion,
-		JWTRefreshMargin: cfg.Connectors.Devin.JWTRefreshMargin.Value(),
-	})
+	conn, err := newDevinConnector(cfg.Connectors.Devin)
 	if err != nil {
 		return nil, err
 	}
@@ -143,11 +113,7 @@ func discoverDevin(ctx context.Context, cfg *config.Config) ([]config.Model, err
 }
 
 func discoverOpenCode(ctx context.Context, cfg *config.Config) ([]config.Model, error) {
-	conn, err := opencode.New(opencode.Options{
-		APIKey:      cfg.Connectors.OpenCode.APIKey.Reveal(),
-		BaseURL:     cfg.Connectors.OpenCode.BaseURL,
-		SessionMode: opencode.SessionMode(cfg.Connectors.OpenCode.SessionHeaderMode),
-	})
+	conn, err := newOpenCodeConnector(cfg.Connectors.OpenCode, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -157,25 +123,18 @@ func discoverOpenCode(ctx context.Context, cfg *config.Config) ([]config.Model, 
 	}
 	models := make([]config.Model, 0, len(ids))
 	for _, id := range ids {
-		proto := "chat"
-		if knownOpenCodeResponses[id] {
-			proto = "responses"
-		}
 		models = append(models, config.Model{
 			ID:        "opencode/" + id,
 			Connector: "opencode",
 			Upstream:  id,
-			Protocol:  proto,
+			Protocol:  opencode.DefaultProtocol(id),
 		})
 	}
 	return models, nil
 }
 
 func discoverDeepSeek(ctx context.Context, cfg *config.Config) ([]config.Model, error) {
-	conn, err := deepseek.New(deepseek.Options{
-		APIKey:  cfg.Connectors.DeepSeek.APIKey.Reveal(),
-		BaseURL: cfg.Connectors.DeepSeek.BaseURL,
-	})
+	conn, err := newDeepSeekConnector(cfg.Connectors.DeepSeek)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package opencode
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -215,8 +214,6 @@ func TestNewRejectsBadOptions(t *testing.T) {
 		t.Fatal("New accepted unknown session mode")
 	}
 }
-
-var _ = errors.As
 
 func TestResponsesRequestTools(t *testing.T) {
 	tool := models.Tool{Type: "function"}

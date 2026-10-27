@@ -19,7 +19,7 @@ HTTP handlers (internal/api)
           -> opencode.Connector
             -> httpx.Do (Transport seam)
               -> opencode.ai/zen/go/v1 (OpenAI SSE or Responses SSE)
-          -> connerr.Classify (Kind tag)
+          -> connector.Error + Kind tag (each connector classifies its own)
       -> api.translate (domain StreamEvent -> OpenAI SSE)
         -> Client
 ```
@@ -47,7 +47,7 @@ HTTP handlers (httptest)
 | internal/connector | Connector interface + error kinds | Connector, Kind, Error |
 | internal/devin | Devin connector: JWT, Connect frames, translation | Connector, TokenSource |
 | internal/opencode | OpenCode Go connector: split endpoints | Connector |
-| internal/httpx | shared HTTP client, SSE reader, backoff | Client, SSEScanner |
+| internal/httpx | shared transport seam, status->Kind, SSE reader | Transport, UpstreamError, SSEScanner |
 | internal/models | canonical domain types | ChatRequest, StreamEvent |
 
 Dependency rule: api -> router -> connector -> (devin, opencode) -> httpx.
@@ -85,6 +85,7 @@ Rejected: A because unknown-shape data spreads protocol drift everywhere.
 | BadRequest | our validation | no retry | 400 |
 | Unsupported | feature or model mismatch | no retry | 400 |
 | UpstreamBad | upstream 4xx (not auth/rate) | no retry, surface | pass status |
+| Internal | local failure (uuid gen, encode) | no retry, no fallback | 500 |
 
 Classify by Kind tag, never by message text. Each connector translates its
 provider errors into Kind before they cross the connector boundary
@@ -94,8 +95,8 @@ provider errors into Kind before they cross the connector boundary
 
 - Non-stream chat: one value (Effect).
 - Streaming: many events (Stream). Devin upstream is a frame stream;
-  OpenCode chat is SSE; Responses is SSE. Catalog marks
-  stream: passthrough or synthesized per model.
+  OpenCode chat is SSE; Responses is SSE. Every connector emits canonical
+  StreamEvents; the api layer writes the OpenAI SSE shape.
 
 ## Requirements (R) and seams
 

@@ -120,42 +120,42 @@ func TestChatCompletions(t *testing.T) {
 		body     string
 		want     int
 		wantCode string
-		wantKind Kind
+		wantKind connector.Kind
 	}{
 		{
 			name:     "known model whose connector is not built",
 			body:     `{"model":"opencode/glm-5.3","messages":[{"role":"user","content":"hi"}]}`,
 			want:     http.StatusNotImplemented,
 			wantCode: "connector_not_ready",
-			wantKind: KindUnsupported,
+			wantKind: connector.KindUnsupported,
 		},
 		{
 			name:     "alias resolves to its model",
 			body:     `{"model":"devin/haiku","messages":[{"role":"user","content":"hi"}]}`,
 			want:     http.StatusNotImplemented,
 			wantCode: "connector_not_ready",
-			wantKind: KindUnsupported,
+			wantKind: connector.KindUnsupported,
 		},
 		{
 			name:     "unknown model",
 			body:     `{"model":"opencode/nope","messages":[{"role":"user","content":"hi"}]}`,
 			want:     http.StatusNotFound,
 			wantCode: "model_not_found",
-			wantKind: KindBadRequest,
+			wantKind: connector.KindBadRequest,
 		},
 		{
 			name:     "missing model",
 			body:     `{"messages":[{"role":"user","content":"hi"}]}`,
 			want:     http.StatusBadRequest,
 			wantCode: "model_required",
-			wantKind: KindBadRequest,
+			wantKind: connector.KindBadRequest,
 		},
 		{
 			name:     "malformed json",
 			body:     `{"model":`,
 			want:     http.StatusBadRequest,
 			wantCode: "invalid_json",
-			wantKind: KindBadRequest,
+			wantKind: connector.KindBadRequest,
 		},
 	}
 
@@ -266,6 +266,30 @@ func TestChatCompletionsConnectorError(t *testing.T) {
 		`{"model":"deepseek/deepseek-flash","messages":[{"role":"user","content":"hi"}]}`)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400 (UpstreamBad passes its status)", rec.Code)
+	}
+}
+
+func TestStatusOfConnector(t *testing.T) {
+	cases := []struct {
+		name string
+		err  *connector.Error
+		want int
+	}{
+		{"auth", &connector.Error{Kind: connector.KindAuth}, http.StatusBadGateway},
+		{"rate limit", &connector.Error{Kind: connector.KindRateLimit}, http.StatusTooManyRequests},
+		{"upstream 5xx", &connector.Error{Kind: connector.KindUpstream}, http.StatusBadGateway},
+		{"network", &connector.Error{Kind: connector.KindNetwork}, http.StatusBadGateway},
+		{"bad request", &connector.Error{Kind: connector.KindBadRequest}, http.StatusBadRequest},
+		{"unsupported", &connector.Error{Kind: connector.KindUnsupported}, http.StatusBadRequest},
+		{"upstream 4xx passes status", &connector.Error{Kind: connector.KindUpstreamBad, Status: 422}, 422},
+		{"upstream 5xx falls to 502", &connector.Error{Kind: connector.KindUpstreamBad, Status: 503}, http.StatusBadGateway},
+		{"internal", &connector.Error{Kind: connector.KindInternal}, http.StatusInternalServerError},
+		{"connector not ready", &connector.Error{Kind: connector.KindUnsupported, Code: "connector_not_ready"}, http.StatusNotImplemented},
+	}
+	for _, tc := range cases {
+		if got := statusOfConnector(tc.err); got != tc.want {
+			t.Errorf("%s: status = %d, want %d", tc.name, got, tc.want)
+		}
 	}
 }
 

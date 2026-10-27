@@ -24,6 +24,7 @@ const (
 	KindBadRequest  Kind = "BadRequest"
 	KindUnsupported Kind = "Unsupported"
 	KindUpstreamBad Kind = "UpstreamBad"
+	KindInternal    Kind = "Internal"
 )
 
 // Error is a connector failure tagged with a Kind. Code is the provider status
