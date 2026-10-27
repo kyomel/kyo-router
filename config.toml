@@ -1,6 +1,6 @@
 [server]
 bind = ":8080"
-# require_api_key_env = "KYO_ROUTER_API_KEY"   # optional, enforced from M3
+# require_api_key_env = "KYO_ROUTER_API_KEY"   # optional client Bearer auth
 
 [connectors.opencode]
 base_url = "https://opencode.ai/zen/go/v1"

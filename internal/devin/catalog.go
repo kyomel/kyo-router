@@ -9,17 +9,11 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"kyo-router/internal/connector"
 	"kyo-router/internal/devin/devinpb"
 )
 
 const catalogPath = "/exa.api_server_pb.ApiServerService/GetCliModelConfigs"
-
-const (
-	// DefaultContextTokens and DefaultMaxOutputTokens match devin-pi-prime's
-	// fallbacks for entries that omit the value.
-	DefaultContextTokens   = 128_000
-	DefaultMaxOutputTokens = 32_768
-)
 
 // ThinkingLevel is one effort suffix Devin bakes into a model uid.
 type ThinkingLevel string
@@ -56,28 +50,14 @@ func (t Thinking) Effective() (ThinkingLevel, bool) {
 
 // Model is one usable Devin uid, verbatim.
 type Model struct {
-	UID             string
-	Label           string
-	Family          string
-	ContextTokens   int
-	MaxOutputTokens int
-	SupportsImages  bool
-	Thinking        Thinking
+	UID            string
+	SupportsImages bool
+	Thinking       Thinking
 }
 
-// Family folds the uid variants into one entry with a level -> uid map.
-// Plain and Defaulted keep the uids that carry no explicit level.
-type Family struct {
-	Name      string
-	Levels    map[ThinkingLevel]string
-	Plain     []string
-	Defaulted []string
-}
-
-// Catalog is the model list plus its family view.
+// Catalog is the live model list discovery returns.
 type Catalog struct {
-	Models   []Model
-	Families []Family
+	Models []Model
 }
 
 // Catalog fetches GetCliModelConfigs with the same key the chat calls use.
@@ -92,13 +72,13 @@ func (c *Connector) Catalog(ctx context.Context) (*Catalog, error) {
 		Metadata: newMetadata(c.credentials.APIKey, auth.UserJWT, c.ideVersion, c.extensionVersion),
 	})
 	if err != nil {
-		return nil, upstreamBad("encode_catalog", "cannot encode GetCliModelConfigs request", err)
+		return nil, connector.UpstreamBad("encode_catalog", "cannot encode GetCliModelConfigs request", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		strings.TrimRight(auth.BaseURL, "/")+catalogPath, bytes.NewReader(payload))
 	if err != nil {
-		return nil, badRequest("catalog_request", "cannot build GetCliModelConfigs request")
+		return nil, connector.BadRequest("catalog_request", "cannot build GetCliModelConfigs request")
 	}
 	req.Header.Set("Content-Type", "application/proto")
 	req.Header.Set("Connect-Protocol-Version", "1")
@@ -106,13 +86,13 @@ func (c *Connector) Catalog(ctx context.Context) (*Catalog, error) {
 
 	resp, err := c.transport.Do(req)
 	if err != nil {
-		return nil, transportError(err)
+		return nil, connector.NetworkError(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
 	if err != nil {
-		return nil, transportError(err)
+		return nil, connector.NetworkError(err)
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		return nil, httpError(resp.StatusCode, resp.Header.Get("Retry-After"), c.clock.Now())
@@ -120,11 +100,11 @@ func (c *Connector) Catalog(ctx context.Context) (*Catalog, error) {
 
 	var decoded devinpb.GetCliModelConfigsResponse
 	if err := proto.Unmarshal(body, &decoded); err != nil {
-		return nil, upstreamBad("decode_catalog", "GetCliModelConfigs response is not protobuf", err)
+		return nil, connector.UpstreamBad("decode_catalog", "GetCliModelConfigs response is not protobuf", err)
 	}
 	catalog := catalogFromResponse(&decoded)
 	if len(catalog.Models) == 0 {
-		return nil, upstreamBad("empty_catalog", "Devin returned an empty model catalog for this account", nil)
+		return nil, connector.UpstreamBad("empty_catalog", "Devin returned an empty model catalog for this account", nil)
 	}
 	return catalog, nil
 }
@@ -144,21 +124,13 @@ func catalogFromResponse(resp *devinpb.GetCliModelConfigsResponse) *Catalog {
 		if isExcludedName(family) {
 			continue
 		}
-		label := strings.TrimSpace(config.GetLabel())
-		if label == "" {
-			label = uid
-		}
 		models = append(models, Model{
-			UID:             uid,
-			Label:           label,
-			Family:          family,
-			ContextTokens:   positiveOr(int(config.GetMaxTokens()), DefaultContextTokens),
-			MaxOutputTokens: positiveOr(int(config.GetModelInfo().GetMaxOutputTokens()), DefaultMaxOutputTokens),
-			SupportsImages:  config.GetSupportsImages(),
-			Thinking:        thinkingOf(uid),
+			UID:            uid,
+			SupportsImages: config.GetSupportsImages(),
+			Thinking:       thinkingOf(uid),
 		})
 	}
-	return &Catalog{Models: models, Families: buildFamilies(models)}
+	return &Catalog{Models: models}
 }
 
 // isExcludedUID drops Devin's pseudo models: adaptive and auto are picker
@@ -169,13 +141,6 @@ func isExcludedUID(uid string) bool {
 
 func isExcludedName(name string) bool {
 	return isExcludedUID(strings.ToLower(strings.TrimSpace(name)))
-}
-
-func positiveOr(value, fallback int) int {
-	if value > 0 {
-		return value
-	}
-	return fallback
 }
 
 // Variant modifiers change speed or cache scope, not thinking effort.
@@ -223,64 +188,4 @@ func stripVariantModifiers(uid string) string {
 			return uid
 		}
 	}
-}
-
-func hasVariantModifier(uid string) bool {
-	return stripVariantModifiers(uid) != uid
-}
-
-func buildFamilies(models []Model) []Family {
-	index := make(map[string]*Family)
-	order := make([]string, 0)
-	for _, model := range models {
-		key := model.Family
-		if key == "" {
-			key = model.UID
-		}
-		family, ok := index[key]
-		if !ok {
-			family = &Family{Name: key, Levels: make(map[ThinkingLevel]string)}
-			index[key] = family
-			order = append(order, key)
-		}
-		switch {
-		case model.Thinking.Level != "":
-			existing, exists := family.Levels[model.Thinking.Level]
-			if !exists || preferLevelUID(model.UID, existing) {
-				family.Levels[model.Thinking.Level] = model.UID
-			}
-		case model.Thinking.Defaulted:
-			family.Defaulted = append(family.Defaulted, model.UID)
-		default:
-			family.Plain = append(family.Plain, model.UID)
-		}
-	}
-	families := make([]Family, 0, len(order))
-	for _, key := range order {
-		families = append(families, *index[key])
-	}
-	return families
-}
-
-// preferLevelUID keeps the map deterministic when a family has speed or cache
-// variants at the same level: the plain uid wins, then the lexical order.
-func preferLevelUID(candidate, existing string) bool {
-	candidateModifier := hasVariantModifier(candidate)
-	existingModifier := hasVariantModifier(existing)
-	if candidateModifier != existingModifier {
-		return !candidateModifier
-	}
-	return candidate < existing
-}
-
-// SortedLevels returns the levels a family maps, in canonical order. It exists
-// so callers (and tests) never iterate a map for output.
-func (f Family) SortedLevels() []ThinkingLevel {
-	levels := make([]ThinkingLevel, 0, len(f.Levels))
-	for _, level := range []ThinkingLevel{ThinkingMinimal, ThinkingLow, ThinkingMedium, ThinkingHigh, ThinkingXHigh, ThinkingMax, ThinkingNone} {
-		if _, ok := f.Levels[level]; ok {
-			levels = append(levels, level)
-		}
-	}
-	return levels
 }

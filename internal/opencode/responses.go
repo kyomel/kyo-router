@@ -198,7 +198,7 @@ func translateResponsesStream(body io.Reader, emit connector.Emit) error {
 		}
 		var event streamEvent
 		if err := json.Unmarshal([]byte(data), &event); err != nil {
-			return &connector.Error{Kind: connector.KindUpstreamBad, Code: "decode_event", Message: "stream event is not a responses event", Err: err}
+			return connector.UpstreamBad("decode_event", "stream event is not a responses event", err)
 		}
 		switch event.Type {
 		case "response.output_text.delta":
@@ -250,7 +250,7 @@ func translateResponsesStream(body io.Reader, emit connector.Emit) error {
 		case "response.failed", "response.incomplete":
 			reason := "stop"
 			if event.Response.Error != nil {
-				return &connector.Error{Kind: connector.KindUpstreamBad, Code: event.Response.Error.Code, Message: event.Response.Error.Message}
+				return connector.UpstreamBad(event.Response.Error.Code, event.Response.Error.Message, nil)
 			}
 			return emit(models.StreamEvent{Type: models.EventDone, FinishReason: reason, Usage: usageOf(event.Response)})
 		}
@@ -264,10 +264,10 @@ func translateResponsesStream(body io.Reader, emit connector.Emit) error {
 func translateResponses(body io.Reader, emit connector.Emit) error {
 	var resp responseObject
 	if err := json.NewDecoder(body).Decode(&resp); err != nil {
-		return &connector.Error{Kind: connector.KindUpstreamBad, Code: "decode_response", Message: "body is not a responses object", Err: err}
+		return connector.UpstreamBad("decode_response", "body is not a responses object", err)
 	}
 	if resp.Error != nil {
-		return &connector.Error{Kind: connector.KindUpstreamBad, Code: resp.Error.Code, Message: resp.Error.Message}
+		return connector.UpstreamBad(resp.Error.Code, resp.Error.Message, nil)
 	}
 	if err := emitOutput(resp, emit); err != nil {
 		return err

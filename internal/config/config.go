@@ -4,9 +4,13 @@
 package config
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -25,7 +29,7 @@ type Config struct {
 
 type Server struct {
 	Bind             string `toml:"bind"`
-	RequireAPIKeyEnv string `toml:"require_api_key_env"`
+	RequireAPIKeyEnv string `toml:"require_api_key_env,omitempty"`
 	APIKey           Secret `toml:"-"`
 }
 
@@ -62,8 +66,8 @@ type Devin struct {
 	CredentialsPath string `toml:"credentials_path"`
 	// APIKeyEnv names the env var that overrides the credentials file. Env wins
 	// so a freshly generated key needs no mount; empty falls back to the file.
+	// The key itself is resolved by devin.LoadCredentials, not stored here.
 	APIKeyEnv        string   `toml:"api_key_env"`
-	APIKey           Secret   `toml:"-"`
 	BaseURL          string   `toml:"base_url"`
 	JWTRefreshMargin Duration `toml:"jwt_refresh_margin"`
 	IDEVersion       string   `toml:"ide_version"`
@@ -75,10 +79,10 @@ type Model struct {
 	Connector string   `toml:"connector"`
 	Upstream  string   `toml:"upstream"`
 	Protocol  string   `toml:"protocol"`
-	Features  []string `toml:"features"`
+	Features  []string `toml:"features,omitempty"`
 	// Aliases are extra public ids for the same model, each inside the
 	// connector's own namespace (devin/, opencode/).
-	Aliases []string `toml:"aliases"`
+	Aliases []string `toml:"aliases,omitempty"`
 }
 
 type Route struct {
@@ -98,6 +102,13 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("config %s: %w", path, err)
 	}
 	return cfg, nil
+}
+
+// Validate re-runs the startup checks on a loaded config. Call it after
+// mutating Models (e.g. a discovery merge) so a bad result is caught before
+// the file is written, not at the next boot.
+func (c *Config) Validate() error {
+	return c.validate()
 }
 
 // FieldError names the config key that failed, so a startup error points at the
@@ -140,6 +151,10 @@ func (d *Duration) UnmarshalText(text []byte) error {
 	}
 	*d = Duration(parsed)
 	return nil
+}
+
+func (d Duration) MarshalText() ([]byte, error) {
+	return []byte(time.Duration(d).String()), nil
 }
 
 func (c *Config) validate() error {
@@ -276,11 +291,8 @@ func (c *Config) validateDevin() error {
 	if d.JWTRefreshMargin == 0 {
 		d.JWTRefreshMargin = Duration(defaultJWTRefreshMargin)
 	}
-	if d.APIKeyEnv != "" {
-		if key := os.Getenv(d.APIKeyEnv); key != "" {
-			d.APIKey = Secret(key)
-			return nil
-		}
+	if os.Getenv(d.APIKeyEnv) != "" {
+		return nil
 	}
 	if d.CredentialsPath == "" {
 		if d.APIKeyEnv != "" {
@@ -298,4 +310,118 @@ func (c *Config) validateDevin() error {
 			"%s is a directory; mount the credentials file, not its parent", d.CredentialsPath)
 	}
 	return nil
+}
+
+// MergeDiff summarizes what changed between the pinned list and live discovery.
+type MergeDiff struct {
+	Added         []string
+	Skipped       []string
+	MissingPinned []string
+	Changed       bool
+}
+
+// MergeModels merges discovered models per connector into the pinned list.
+// Existing entries keep their protocol, features, and aliases untouched. The
+// merge keys on connector+upstream, not the public id: a pinned id that names
+// an upstream still counts as covering it.
+func MergeModels(pinned []Model, discovered map[string][]Model) ([]Model, MergeDiff) {
+	liveByConnector := make(map[string]map[string]Model, len(discovered))
+	for conn, list := range discovered {
+		m := make(map[string]Model, len(list))
+		for _, item := range list {
+			m[item.Upstream] = item
+		}
+		liveByConnector[conn] = m
+	}
+
+	seenUpstream := make(map[string]bool, len(pinned))
+	takenIDs := make(map[string]bool, len(pinned))
+	merged := make([]Model, 0, len(pinned))
+	var diff MergeDiff
+
+	for _, existing := range pinned {
+		seenUpstream[existing.Connector+"/"+existing.Upstream] = true
+		takenIDs[existing.ID] = true
+		for _, alias := range existing.Aliases {
+			takenIDs[alias] = true
+		}
+		merged = append(merged, existing)
+		if live, ok := liveByConnector[existing.Connector]; ok {
+			if _, stillThere := live[existing.Upstream]; !stillThere {
+				diff.MissingPinned = append(diff.MissingPinned, existing.ID)
+			}
+		}
+	}
+
+	var additions []Model
+	for conn, list := range discovered {
+		for _, item := range list {
+			if seenUpstream[conn+"/"+item.Upstream] {
+				continue
+			}
+			if takenIDs[item.ID] {
+				diff.Skipped = append(diff.Skipped, item.ID)
+				continue
+			}
+			seenUpstream[conn+"/"+item.Upstream] = true
+			takenIDs[item.ID] = true
+			additions = append(additions, item)
+		}
+	}
+	slices.SortFunc(additions, func(a, b Model) int {
+		if a.Connector != b.Connector {
+			return strings.Compare(a.Connector, b.Connector)
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+	for _, add := range additions {
+		merged = append(merged, add)
+		diff.Added = append(diff.Added, add.ID)
+	}
+	diff.Changed = len(diff.Added) > 0
+	return merged, diff
+}
+
+// WriteAtomic encodes cfg to a sibling temp file and renames it over path.
+// When path is a single-file container bind mount (where creating a sibling in
+// /etc or renaming over the mountpoint returns EACCES/EBUSY), it falls back to
+// writing the encoded bytes in place.
+func WriteAtomic(path string, cfg *Config) error {
+	var buf bytes.Buffer
+	if err := toml.NewEncoder(&buf).Encode(cfg); err != nil {
+		return fmt.Errorf("encode config: %w", err)
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
+		if isBindMountFallback(err) {
+			return writeInPlace(path, buf.Bytes())
+		}
+		_ = os.Remove(tmp)
+		return fmt.Errorf("write temp config: %w", err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		if isBindMountFallback(err) {
+			return writeInPlace(path, buf.Bytes())
+		}
+		return fmt.Errorf("rename config: %w", err)
+	}
+	return nil
+}
+
+// writeInPlace replaces path directly - the bind-mount fallback where no
+// sibling file can be created. A crash mid-write leaves a torn file, so the
+// atomic path above is always tried first.
+func writeInPlace(path string, data []byte) error {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		return fmt.Errorf("write config in place: %w", err)
+	}
+	return nil
+}
+
+func isBindMountFallback(err error) bool {
+	return errors.Is(err, syscall.EBUSY) ||
+		errors.Is(err, syscall.EACCES) ||
+		errors.Is(err, syscall.EPERM) ||
+		errors.Is(err, syscall.EXDEV)
 }

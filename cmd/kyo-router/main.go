@@ -18,13 +18,17 @@ import (
 	"kyo-router/internal/catalog"
 	"kyo-router/internal/config"
 	"kyo-router/internal/connector"
-	"kyo-router/internal/deepseek"
-	"kyo-router/internal/devin"
-	"kyo-router/internal/opencode"
 	"kyo-router/internal/router"
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "discover" {
+		if err := runDiscover(os.Args[2:]); err != nil {
+			slog.Error("kyo-router discover failed", "err", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		slog.Error("kyo-router stopped", "err", err)
 		os.Exit(1)
@@ -53,7 +57,7 @@ func run() error {
 		Handler:           api.New(cat, rt, cfg.Server.APIKey.Reveal(), slog.Default()),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,
-		// No WriteTimeout: SSE replies stay open for the whole completion (M1).
+		// No WriteTimeout: SSE replies stay open for the whole completion.
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -85,13 +89,7 @@ func run() error {
 func configPath() string {
 	path := flag.String("config", "", "path to config.toml (default $KYO_ROUTER_CONFIG or ./config.toml)")
 	flag.Parse()
-	if *path != "" {
-		return *path
-	}
-	if env := os.Getenv("KYO_ROUTER_CONFIG"); env != "" {
-		return env
-	}
-	return "config.toml"
+	return resolveConfigPath(*path)
 }
 
 // buildBackends constructs the connectors the configured models need. A
@@ -105,10 +103,7 @@ func buildBackends(cfg *config.Config) (map[string]connector.Connector, error) {
 	backends := map[string]connector.Connector{}
 
 	if enabled["deepseek"] {
-		ds, err := deepseek.New(deepseek.Options{
-			APIKey:  cfg.Connectors.DeepSeek.APIKey.Reveal(),
-			BaseURL: cfg.Connectors.DeepSeek.BaseURL,
-		})
+		ds, err := newDeepSeekConnector(cfg.Connectors.DeepSeek)
 		if err != nil {
 			return nil, err
 		}
@@ -123,42 +118,14 @@ func buildBackends(cfg *config.Config) (map[string]connector.Connector, error) {
 				responsesModels = append(responsesModels, m.Upstream)
 			}
 		}
-		oc, err := opencode.New(opencode.Options{
-			APIKey:          cfg.Connectors.OpenCode.APIKey.Reveal(),
-			BaseURL:         cfg.Connectors.OpenCode.BaseURL,
-			SessionMode:     opencode.SessionMode(cfg.Connectors.OpenCode.SessionHeaderMode),
-			ResponsesModels: responsesModels,
-		})
+		oc, err := newOpenCodeConnector(cfg.Connectors.OpenCode, responsesModels)
 		if err != nil {
 			return nil, err
 		}
 		backends["opencode"] = oc
 	}
 	if enabled["devin"] {
-		// LoadCredentials resolves env, key file, then the CLI credentials file
-		// and skips agent-api keys at every step. A custom api_key_env name is
-		// surfaced as DEVIN_API_KEY for the lookup.
-		lookup := os.Getenv
-		if name := cfg.Connectors.Devin.APIKeyEnv; name != "" && name != "DEVIN_API_KEY" {
-			lookup = func(key string) string {
-				if key == "DEVIN_API_KEY" {
-					return os.Getenv(name)
-				}
-				return os.Getenv(key)
-			}
-		}
-		creds, err := devin.LoadCredentials(lookup, devin.CredentialFiles{
-			CLIFile: cfg.Connectors.Devin.CredentialsPath,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("devin credentials: %w", err)
-		}
-		dev, err := devin.New(devin.Options{
-			Credentials:      creds,
-			IDEVersion:       cfg.Connectors.Devin.IDEVersion,
-			ExtensionVersion: cfg.Connectors.Devin.ExtensionVersion,
-			JWTRefreshMargin: cfg.Connectors.Devin.JWTRefreshMargin.Value(),
-		})
+		dev, err := newDevinConnector(cfg.Connectors.Devin)
 		if err != nil {
 			return nil, err
 		}

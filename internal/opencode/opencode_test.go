@@ -3,7 +3,6 @@ package opencode
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -216,8 +215,6 @@ func TestNewRejectsBadOptions(t *testing.T) {
 	}
 }
 
-var _ = errors.As
-
 func TestResponsesRequestTools(t *testing.T) {
 	tool := models.Tool{Type: "function"}
 	tool.Function.Name = "lookup"
@@ -249,5 +246,27 @@ func TestResponsesRequestTools(t *testing.T) {
 	}
 	if string(wire.ToolChoice) != `"auto"` {
 		t.Errorf("tool_choice = %s, want \"auto\"", wire.ToolChoice)
+	}
+}
+
+func TestModelsList(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != modelsPath {
+			t.Errorf("request = %s %s, want GET %s", r.Method, r.URL.Path, modelsPath)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer oc_sk_test" {
+			t.Errorf("authorization = %q", got)
+		}
+		_, _ = w.Write([]byte(`{"data":[{"id":"glm-5.3"},{"id":"grok-4.7"},{"id":" "}]}`))
+	}))
+	defer server.Close()
+
+	conn := newTestConnector(t, server, Options{})
+	ids, err := conn.Models(context.Background())
+	if err != nil {
+		t.Fatalf("Models: %v", err)
+	}
+	if len(ids) != 2 || ids[0] != "glm-5.3" || ids[1] != "grok-4.7" {
+		t.Errorf("ids = %v, want [glm-5.3 grok-4.7]", ids)
 	}
 }

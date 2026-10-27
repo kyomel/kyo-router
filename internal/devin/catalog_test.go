@@ -51,29 +51,8 @@ func TestCatalogExcludesFusionAdaptiveAndAuto(t *testing.T) {
 	if model.UID != "claude-haiku-5-5-low" {
 		t.Errorf("uid = %q", model.UID)
 	}
-	if model.ContextTokens != 200_000 || model.MaxOutputTokens != 64_000 {
-		t.Errorf("tokens = %d/%d", model.ContextTokens, model.MaxOutputTokens)
-	}
 	if !model.SupportsImages {
 		t.Error("supports images = false, want true")
-	}
-	if len(catalog.Families) != 1 || catalog.Families[0].Name != "Claude Haiku 5.5" {
-		t.Errorf("families = %+v", catalog.Families)
-	}
-}
-
-func TestCatalogDefaultsTokenLimits(t *testing.T) {
-	response := &devinpb.GetCliModelConfigsResponse{
-		ClientModelConfigs: []*devinpb.ClientModelConfig{
-			catalogConfig("swe-1-6", "SWE 1.6", "SWE 1.6", 0, 0, false, false),
-		},
-	}
-	model := catalogFromResponse(response).Models[0]
-	if model.ContextTokens != DefaultContextTokens {
-		t.Errorf("context = %d, want %d", model.ContextTokens, DefaultContextTokens)
-	}
-	if model.MaxOutputTokens != DefaultMaxOutputTokens {
-		t.Errorf("max output = %d, want %d", model.MaxOutputTokens, DefaultMaxOutputTokens)
 	}
 }
 
@@ -187,51 +166,6 @@ func TestThinkingCoverage(t *testing.T) {
 	if explicit != 5 {
 		t.Errorf("explicit = %d, want 5", explicit)
 	}
-
-	family := findFamily(t, catalog, "Claude Haiku 5.5")
-	if got := family.Levels[ThinkingLow]; got != "claude-haiku-5-5-low" {
-		t.Errorf("low = %q", got)
-	}
-	if got := family.Levels[ThinkingXHigh]; got != "claude-haiku-5-5-xhigh" {
-		t.Errorf("xhigh = %q", got)
-	}
-	if got := family.SortedLevels(); len(got) != 5 {
-		t.Errorf("levels = %v, want 5", got)
-	}
-
-	defaultedFamily := findFamily(t, catalog, "Defaulted")
-	if len(defaultedFamily.Defaulted) != 4 {
-		t.Errorf("defaulted family = %+v", defaultedFamily)
-	}
-	plainFamily := findFamily(t, catalog, "Plain")
-	if len(plainFamily.Plain) != 10 {
-		t.Errorf("plain family = %+v", plainFamily)
-	}
-}
-
-func TestFamilyLevelPrefersPlainUID(t *testing.T) {
-	response := &devinpb.GetCliModelConfigsResponse{
-		ClientModelConfigs: []*devinpb.ClientModelConfig{
-			catalogConfig("claude-opus-5-5-high-fast", "Claude Opus 5.5 High Fast", "Claude Opus 5.5", 1, 1, false, false),
-			catalogConfig("claude-opus-5-5-high", "Claude Opus 5.5 High", "Claude Opus 5.5", 1, 1, false, false),
-		},
-	}
-	catalog := catalogFromResponse(response)
-	family := findFamily(t, catalog, "Claude Opus 5.5")
-	if got := family.Levels[ThinkingHigh]; got != "claude-opus-5-5-high" {
-		t.Errorf("high = %q, want the plain uid", got)
-	}
-}
-
-func findFamily(t *testing.T, catalog *Catalog, name string) Family {
-	t.Helper()
-	for _, family := range catalog.Families {
-		if family.Name == name {
-			return family
-		}
-	}
-	t.Fatalf("family %q not found in %+v", name, catalog.Families)
-	return Family{}
 }
 
 func TestCatalogFetch(t *testing.T) {
