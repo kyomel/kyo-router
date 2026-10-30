@@ -106,7 +106,7 @@ func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRe
 		payload, err = marshalResponsesRequest(upstream, req)
 		path = responsesPath
 	} else {
-		payload, err = oai.MarshalChatRequest(upstream, req, oai.RequestOptions{StreamOptions: true})
+		payload, err = oai.MarshalChatRequest(upstream, req, oai.RequestOptions{StreamOptions: true, ReasoningEffort: true})
 		path = chatPath
 	}
 	if err != nil {

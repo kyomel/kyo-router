@@ -57,6 +57,1894 @@ protocol = "chat"
 features = ["thinking"]
 aliases = ["deepseek/pro"]
 
+[[model]]
+id = "devin/claude-5-fable-high"
+connector = "devin"
+upstream = "claude-5-fable-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-5-fable-low"
+connector = "devin"
+upstream = "claude-5-fable-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-5-fable-max"
+connector = "devin"
+upstream = "claude-5-fable-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-5-fable-medium"
+connector = "devin"
+upstream = "claude-5-fable-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-5-fable-xhigh"
+connector = "devin"
+upstream = "claude-5-fable-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-fable-5-1-high"
+connector = "devin"
+upstream = "claude-fable-5-1-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-fable-5-1-low"
+connector = "devin"
+upstream = "claude-fable-5-1-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-fable-5-1-max"
+connector = "devin"
+upstream = "claude-fable-5-1-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-fable-5-1-medium"
+connector = "devin"
+upstream = "claude-fable-5-1-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-fable-5-1-xhigh"
+connector = "devin"
+upstream = "claude-fable-5-1-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-haiku-5-5-high"
+connector = "devin"
+upstream = "claude-haiku-5-5-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-haiku-5-5-max"
+connector = "devin"
+upstream = "claude-haiku-5-5-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-haiku-5-5-medium"
+connector = "devin"
+upstream = "claude-haiku-5-5-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-haiku-5-5-xhigh"
+connector = "devin"
+upstream = "claude-haiku-5-5-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-6"
+connector = "devin"
+upstream = "claude-opus-4-6"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/claude-opus-4-6-1m"
+connector = "devin"
+upstream = "claude-opus-4-6-1m"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/claude-opus-4-6-thinking"
+connector = "devin"
+upstream = "claude-opus-4-6-thinking"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-6-thinking-1m"
+connector = "devin"
+upstream = "claude-opus-4-6-thinking-1m"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-7-high"
+connector = "devin"
+upstream = "claude-opus-4-7-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-7-low"
+connector = "devin"
+upstream = "claude-opus-4-7-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-7-max"
+connector = "devin"
+upstream = "claude-opus-4-7-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-7-medium"
+connector = "devin"
+upstream = "claude-opus-4-7-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-7-xhigh"
+connector = "devin"
+upstream = "claude-opus-4-7-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-high"
+connector = "devin"
+upstream = "claude-opus-4-8-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-high-fast"
+connector = "devin"
+upstream = "claude-opus-4-8-high-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-low"
+connector = "devin"
+upstream = "claude-opus-4-8-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-low-fast"
+connector = "devin"
+upstream = "claude-opus-4-8-low-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-max"
+connector = "devin"
+upstream = "claude-opus-4-8-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-max-fast"
+connector = "devin"
+upstream = "claude-opus-4-8-max-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-medium"
+connector = "devin"
+upstream = "claude-opus-4-8-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-medium-fast"
+connector = "devin"
+upstream = "claude-opus-4-8-medium-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-xhigh"
+connector = "devin"
+upstream = "claude-opus-4-8-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-4-8-xhigh-fast"
+connector = "devin"
+upstream = "claude-opus-4-8-xhigh-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-high"
+connector = "devin"
+upstream = "claude-opus-5-5-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-high-fast"
+connector = "devin"
+upstream = "claude-opus-5-5-high-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-low"
+connector = "devin"
+upstream = "claude-opus-5-5-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-low-fast"
+connector = "devin"
+upstream = "claude-opus-5-5-low-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-max"
+connector = "devin"
+upstream = "claude-opus-5-5-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-max-fast"
+connector = "devin"
+upstream = "claude-opus-5-5-max-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-medium"
+connector = "devin"
+upstream = "claude-opus-5-5-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-medium-fast"
+connector = "devin"
+upstream = "claude-opus-5-5-medium-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-xhigh"
+connector = "devin"
+upstream = "claude-opus-5-5-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-5-xhigh-fast"
+connector = "devin"
+upstream = "claude-opus-5-5-xhigh-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-high"
+connector = "devin"
+upstream = "claude-opus-5-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-high-fast"
+connector = "devin"
+upstream = "claude-opus-5-high-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-low"
+connector = "devin"
+upstream = "claude-opus-5-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-low-fast"
+connector = "devin"
+upstream = "claude-opus-5-low-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-max"
+connector = "devin"
+upstream = "claude-opus-5-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-max-fast"
+connector = "devin"
+upstream = "claude-opus-5-max-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-medium"
+connector = "devin"
+upstream = "claude-opus-5-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-medium-fast"
+connector = "devin"
+upstream = "claude-opus-5-medium-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-xhigh"
+connector = "devin"
+upstream = "claude-opus-5-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-opus-5-xhigh-fast"
+connector = "devin"
+upstream = "claude-opus-5-xhigh-fast"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-4-6"
+connector = "devin"
+upstream = "claude-sonnet-4-6"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/claude-sonnet-4-6-1m"
+connector = "devin"
+upstream = "claude-sonnet-4-6-1m"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/claude-sonnet-4-6-thinking"
+connector = "devin"
+upstream = "claude-sonnet-4-6-thinking"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-4-6-thinking-1m"
+connector = "devin"
+upstream = "claude-sonnet-4-6-thinking-1m"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-5-high"
+connector = "devin"
+upstream = "claude-sonnet-5-5-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-5-low"
+connector = "devin"
+upstream = "claude-sonnet-5-5-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-5-max"
+connector = "devin"
+upstream = "claude-sonnet-5-5-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-5-medium"
+connector = "devin"
+upstream = "claude-sonnet-5-5-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-5-xhigh"
+connector = "devin"
+upstream = "claude-sonnet-5-5-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-high"
+connector = "devin"
+upstream = "claude-sonnet-5-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-low"
+connector = "devin"
+upstream = "claude-sonnet-5-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-max"
+connector = "devin"
+upstream = "claude-sonnet-5-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-medium"
+connector = "devin"
+upstream = "claude-sonnet-5-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/claude-sonnet-5-xhigh"
+connector = "devin"
+upstream = "claude-sonnet-5-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-1-flash-1017-high"
+connector = "devin"
+upstream = "deepseek-v4-1-flash-1017-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-1-flash-1017-low"
+connector = "devin"
+upstream = "deepseek-v4-1-flash-1017-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-1-flash-1017-max"
+connector = "devin"
+upstream = "deepseek-v4-1-flash-1017-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-1-flash-1017-none"
+connector = "devin"
+upstream = "deepseek-v4-1-flash-1017-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-flash-high"
+connector = "devin"
+upstream = "deepseek-v4-flash-high"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-flash-max"
+connector = "devin"
+upstream = "deepseek-v4-flash-max"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-pro-high"
+connector = "devin"
+upstream = "deepseek-v4-pro-high"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/deepseek-v4-pro-max"
+connector = "devin"
+upstream = "deepseek-v4-pro-max"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/gemini-3-5-flash-high"
+connector = "devin"
+upstream = "gemini-3-5-flash-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-5-flash-low"
+connector = "devin"
+upstream = "gemini-3-5-flash-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-5-flash-medium"
+connector = "devin"
+upstream = "gemini-3-5-flash-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-5-flash-minimal"
+connector = "devin"
+upstream = "gemini-3-5-flash-minimal"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-6-flash-high"
+connector = "devin"
+upstream = "gemini-3-6-flash-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-6-flash-low"
+connector = "devin"
+upstream = "gemini-3-6-flash-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-6-flash-medium"
+connector = "devin"
+upstream = "gemini-3-6-flash-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-6-flash-minimal"
+connector = "devin"
+upstream = "gemini-3-6-flash-minimal"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-7-flash-high"
+connector = "devin"
+upstream = "gemini-3-7-flash-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-7-flash-low"
+connector = "devin"
+upstream = "gemini-3-7-flash-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-7-flash-medium"
+connector = "devin"
+upstream = "gemini-3-7-flash-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-8-flash-high"
+connector = "devin"
+upstream = "gemini-3-8-flash-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-8-flash-low"
+connector = "devin"
+upstream = "gemini-3-8-flash-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-3-8-flash-medium"
+connector = "devin"
+upstream = "gemini-3-8-flash-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-4-argon-high"
+connector = "devin"
+upstream = "gemini-4-argon-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-4-argon-low"
+connector = "devin"
+upstream = "gemini-4-argon-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gemini-4-argon-medium"
+connector = "devin"
+upstream = "gemini-4-argon-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/glm-5-2"
+connector = "devin"
+upstream = "glm-5-2"
+protocol = "devin"
+
+[[model]]
+id = "devin/glm-5-2-1m"
+connector = "devin"
+upstream = "glm-5-2-1m"
+protocol = "devin"
+
+[[model]]
+id = "devin/glm-5-2-max"
+connector = "devin"
+upstream = "glm-5-2-max"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/glm-5-2-max-1m"
+connector = "devin"
+upstream = "glm-5-2-max-1m"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/glm-5-2-none"
+connector = "devin"
+upstream = "glm-5-2-none"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/glm-5-2-none-1m"
+connector = "devin"
+upstream = "glm-5-2-none-1m"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/glm-5-3-flash-high"
+connector = "devin"
+upstream = "glm-5-3-flash-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/glm-5-3-flash-low"
+connector = "devin"
+upstream = "glm-5-3-flash-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/glm-5-3-flash-max"
+connector = "devin"
+upstream = "glm-5-3-flash-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/glm-5-3-high"
+connector = "devin"
+upstream = "glm-5-3-high"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/glm-5-3-low"
+connector = "devin"
+upstream = "glm-5-3-low"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/glm-5-3-max"
+connector = "devin"
+upstream = "glm-5-3-max"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-high"
+connector = "devin"
+upstream = "gpt-5-4-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-high-priority"
+connector = "devin"
+upstream = "gpt-5-4-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-low"
+connector = "devin"
+upstream = "gpt-5-4-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-low-priority"
+connector = "devin"
+upstream = "gpt-5-4-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-medium"
+connector = "devin"
+upstream = "gpt-5-4-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-medium-priority"
+connector = "devin"
+upstream = "gpt-5-4-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-mini-high"
+connector = "devin"
+upstream = "gpt-5-4-mini-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-mini-low"
+connector = "devin"
+upstream = "gpt-5-4-mini-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-mini-medium"
+connector = "devin"
+upstream = "gpt-5-4-mini-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-mini-xhigh"
+connector = "devin"
+upstream = "gpt-5-4-mini-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-none"
+connector = "devin"
+upstream = "gpt-5-4-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-none-priority"
+connector = "devin"
+upstream = "gpt-5-4-none-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-xhigh"
+connector = "devin"
+upstream = "gpt-5-4-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-4-xhigh-priority"
+connector = "devin"
+upstream = "gpt-5-4-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-high"
+connector = "devin"
+upstream = "gpt-5-5-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-high-priority"
+connector = "devin"
+upstream = "gpt-5-5-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-low"
+connector = "devin"
+upstream = "gpt-5-5-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-low-priority"
+connector = "devin"
+upstream = "gpt-5-5-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-medium"
+connector = "devin"
+upstream = "gpt-5-5-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-medium-priority"
+connector = "devin"
+upstream = "gpt-5-5-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-none"
+connector = "devin"
+upstream = "gpt-5-5-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-none-priority"
+connector = "devin"
+upstream = "gpt-5-5-none-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-xhigh"
+connector = "devin"
+upstream = "gpt-5-5-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-5-xhigh-priority"
+connector = "devin"
+upstream = "gpt-5-5-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-high"
+connector = "devin"
+upstream = "gpt-5-6-luna-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-high-priority"
+connector = "devin"
+upstream = "gpt-5-6-luna-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-low"
+connector = "devin"
+upstream = "gpt-5-6-luna-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-low-priority"
+connector = "devin"
+upstream = "gpt-5-6-luna-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-max"
+connector = "devin"
+upstream = "gpt-5-6-luna-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-max-priority"
+connector = "devin"
+upstream = "gpt-5-6-luna-max-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-medium"
+connector = "devin"
+upstream = "gpt-5-6-luna-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-medium-priority"
+connector = "devin"
+upstream = "gpt-5-6-luna-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-none"
+connector = "devin"
+upstream = "gpt-5-6-luna-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-none-priority"
+connector = "devin"
+upstream = "gpt-5-6-luna-none-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-xhigh"
+connector = "devin"
+upstream = "gpt-5-6-luna-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-luna-xhigh-priority"
+connector = "devin"
+upstream = "gpt-5-6-luna-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-high"
+connector = "devin"
+upstream = "gpt-5-6-sol-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-high-priority"
+connector = "devin"
+upstream = "gpt-5-6-sol-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-low"
+connector = "devin"
+upstream = "gpt-5-6-sol-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-low-priority"
+connector = "devin"
+upstream = "gpt-5-6-sol-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-max"
+connector = "devin"
+upstream = "gpt-5-6-sol-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-max-priority"
+connector = "devin"
+upstream = "gpt-5-6-sol-max-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-medium"
+connector = "devin"
+upstream = "gpt-5-6-sol-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-medium-priority"
+connector = "devin"
+upstream = "gpt-5-6-sol-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-none"
+connector = "devin"
+upstream = "gpt-5-6-sol-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-none-priority"
+connector = "devin"
+upstream = "gpt-5-6-sol-none-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-xhigh"
+connector = "devin"
+upstream = "gpt-5-6-sol-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-sol-xhigh-priority"
+connector = "devin"
+upstream = "gpt-5-6-sol-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-high"
+connector = "devin"
+upstream = "gpt-5-6-terra-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-high-priority"
+connector = "devin"
+upstream = "gpt-5-6-terra-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-low"
+connector = "devin"
+upstream = "gpt-5-6-terra-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-low-priority"
+connector = "devin"
+upstream = "gpt-5-6-terra-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-max"
+connector = "devin"
+upstream = "gpt-5-6-terra-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-max-priority"
+connector = "devin"
+upstream = "gpt-5-6-terra-max-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-medium"
+connector = "devin"
+upstream = "gpt-5-6-terra-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-medium-priority"
+connector = "devin"
+upstream = "gpt-5-6-terra-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-none"
+connector = "devin"
+upstream = "gpt-5-6-terra-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-none-priority"
+connector = "devin"
+upstream = "gpt-5-6-terra-none-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-xhigh"
+connector = "devin"
+upstream = "gpt-5-6-terra-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-5-6-terra-xhigh-priority"
+connector = "devin"
+upstream = "gpt-5-6-terra-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-high"
+connector = "devin"
+upstream = "gpt-6-1-sol-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-high-priority"
+connector = "devin"
+upstream = "gpt-6-1-sol-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-low"
+connector = "devin"
+upstream = "gpt-6-1-sol-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-low-priority"
+connector = "devin"
+upstream = "gpt-6-1-sol-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-max"
+connector = "devin"
+upstream = "gpt-6-1-sol-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-max-priority"
+connector = "devin"
+upstream = "gpt-6-1-sol-max-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-medium"
+connector = "devin"
+upstream = "gpt-6-1-sol-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-medium-priority"
+connector = "devin"
+upstream = "gpt-6-1-sol-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-xhigh"
+connector = "devin"
+upstream = "gpt-6-1-sol-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-1-sol-xhigh-priority"
+connector = "devin"
+upstream = "gpt-6-1-sol-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-high"
+connector = "devin"
+upstream = "gpt-6-astra-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-high-priority"
+connector = "devin"
+upstream = "gpt-6-astra-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-low"
+connector = "devin"
+upstream = "gpt-6-astra-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-low-priority"
+connector = "devin"
+upstream = "gpt-6-astra-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-max"
+connector = "devin"
+upstream = "gpt-6-astra-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-max-priority"
+connector = "devin"
+upstream = "gpt-6-astra-max-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-medium"
+connector = "devin"
+upstream = "gpt-6-astra-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-medium-priority"
+connector = "devin"
+upstream = "gpt-6-astra-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-xhigh"
+connector = "devin"
+upstream = "gpt-6-astra-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-astra-xhigh-priority"
+connector = "devin"
+upstream = "gpt-6-astra-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-high"
+connector = "devin"
+upstream = "gpt-6-luna-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-high-priority"
+connector = "devin"
+upstream = "gpt-6-luna-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-low"
+connector = "devin"
+upstream = "gpt-6-luna-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-low-priority"
+connector = "devin"
+upstream = "gpt-6-luna-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-max"
+connector = "devin"
+upstream = "gpt-6-luna-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-max-priority"
+connector = "devin"
+upstream = "gpt-6-luna-max-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-medium"
+connector = "devin"
+upstream = "gpt-6-luna-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-medium-priority"
+connector = "devin"
+upstream = "gpt-6-luna-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-none"
+connector = "devin"
+upstream = "gpt-6-luna-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-none-priority"
+connector = "devin"
+upstream = "gpt-6-luna-none-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-xhigh"
+connector = "devin"
+upstream = "gpt-6-luna-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-luna-xhigh-priority"
+connector = "devin"
+upstream = "gpt-6-luna-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-high"
+connector = "devin"
+upstream = "gpt-6-sol-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-high-priority"
+connector = "devin"
+upstream = "gpt-6-sol-high-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-low"
+connector = "devin"
+upstream = "gpt-6-sol-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-low-priority"
+connector = "devin"
+upstream = "gpt-6-sol-low-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-max"
+connector = "devin"
+upstream = "gpt-6-sol-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-max-priority"
+connector = "devin"
+upstream = "gpt-6-sol-max-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-medium"
+connector = "devin"
+upstream = "gpt-6-sol-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-medium-priority"
+connector = "devin"
+upstream = "gpt-6-sol-medium-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-none"
+connector = "devin"
+upstream = "gpt-6-sol-none"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-none-priority"
+connector = "devin"
+upstream = "gpt-6-sol-none-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-xhigh"
+connector = "devin"
+upstream = "gpt-6-sol-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/gpt-6-sol-xhigh-priority"
+connector = "devin"
+upstream = "gpt-6-sol-xhigh-priority"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-6-high"
+connector = "devin"
+upstream = "grok-4-6-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-6-low"
+connector = "devin"
+upstream = "grok-4-6-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-6-medium"
+connector = "devin"
+upstream = "grok-4-6-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-6-xhigh"
+connector = "devin"
+upstream = "grok-4-6-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-7-high"
+connector = "devin"
+upstream = "grok-4-7-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-7-low"
+connector = "devin"
+upstream = "grok-4-7-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-7-medium"
+connector = "devin"
+upstream = "grok-4-7-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/grok-4-7-xhigh"
+connector = "devin"
+upstream = "grok-4-7-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/kimi-k2-6"
+connector = "devin"
+upstream = "kimi-k2-6"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/kimi-k2-7"
+connector = "devin"
+upstream = "kimi-k2-7"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/kimi-k3-high"
+connector = "devin"
+upstream = "kimi-k3-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/kimi-k3-low"
+connector = "devin"
+upstream = "kimi-k3-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/kimi-k3-max"
+connector = "devin"
+upstream = "kimi-k3-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/muse-wonder-1-0-high"
+connector = "devin"
+upstream = "muse-wonder-1-0-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/muse-wonder-1-0-low"
+connector = "devin"
+upstream = "muse-wonder-1-0-low"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/muse-wonder-1-0-max"
+connector = "devin"
+upstream = "muse-wonder-1-0-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/muse-wonder-1-0-medium"
+connector = "devin"
+upstream = "muse-wonder-1-0-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/muse-wonder-1-0-minimal"
+connector = "devin"
+upstream = "muse-wonder-1-0-minimal"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/muse-wonder-1-0-xhigh"
+connector = "devin"
+upstream = "muse-wonder-1-0-xhigh"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/nemotron-3-ultra-high"
+connector = "devin"
+upstream = "nemotron-3-ultra-high"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/nemotron-3-ultra-medium"
+connector = "devin"
+upstream = "nemotron-3-ultra-medium"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/nemotron-3-ultra-none"
+connector = "devin"
+upstream = "nemotron-3-ultra-none"
+protocol = "devin"
+features = ["thinking"]
+
+[[model]]
+id = "devin/swe-1-6"
+connector = "devin"
+upstream = "swe-1-6"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/swe-1-7"
+connector = "devin"
+upstream = "swe-1-7"
+protocol = "devin"
+features = ["images"]
+
+[[model]]
+id = "devin/swe-1-7-medium"
+connector = "devin"
+upstream = "swe-1-7-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/swe-2-high"
+connector = "devin"
+upstream = "swe-2-high"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/swe-2-high-lightning"
+connector = "devin"
+upstream = "swe-2-high-lightning"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/swe-2-max"
+connector = "devin"
+upstream = "swe-2-max"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/swe-2-max-lightning"
+connector = "devin"
+upstream = "swe-2-max-lightning"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/swe-2-medium"
+connector = "devin"
+upstream = "swe-2-medium"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "devin/swe-2-medium-lightning"
+connector = "devin"
+upstream = "swe-2-medium-lightning"
+protocol = "devin"
+features = ["images", "thinking"]
+
+[[model]]
+id = "opencode/beam-free"
+connector = "opencode"
+upstream = "beam-free"
+protocol = "chat"
+
+[[model]]
+id = "opencode/claude-haiku-5-5"
+connector = "opencode"
+upstream = "claude-haiku-5-5"
+protocol = "chat"
+
+[[model]]
+id = "opencode/deepseek-v4-pro"
+connector = "opencode"
+upstream = "deepseek-v4-pro"
+protocol = "chat"
+
+[[model]]
+id = "opencode/deepseek-v4.1-flash"
+connector = "opencode"
+upstream = "deepseek-v4.1-flash"
+protocol = "chat"
+
+[[model]]
+id = "opencode/gemini-4-argon"
+connector = "opencode"
+upstream = "gemini-4-argon"
+protocol = "chat"
+
+[[model]]
+id = "opencode/glm-5.1"
+connector = "opencode"
+upstream = "glm-5.1"
+protocol = "chat"
+
+[[model]]
+id = "opencode/glm-5.2"
+connector = "opencode"
+upstream = "glm-5.2"
+protocol = "chat"
+
+[[model]]
+id = "opencode/glm-5.3-flash"
+connector = "opencode"
+upstream = "glm-5.3-flash"
+protocol = "chat"
+
+[[model]]
+id = "opencode/gpt-5.6-luna"
+connector = "opencode"
+upstream = "gpt-5.6-luna"
+protocol = "chat"
+
+[[model]]
+id = "opencode/gpt-6-luna"
+connector = "opencode"
+upstream = "gpt-6-luna"
+protocol = "responses"
+
+[[model]]
+id = "opencode/grok-4.6"
+connector = "opencode"
+upstream = "grok-4.6"
+protocol = "responses"
+
+[[model]]
+id = "opencode/hy3"
+connector = "opencode"
+upstream = "hy3"
+protocol = "chat"
+
+[[model]]
+id = "opencode/hy4-preview"
+connector = "opencode"
+upstream = "hy4-preview"
+protocol = "chat"
+
+[[model]]
+id = "opencode/iceman-contributor-free"
+connector = "opencode"
+upstream = "iceman-contributor-free"
+protocol = "chat"
+
+[[model]]
+id = "opencode/kimi-k2.6"
+connector = "opencode"
+upstream = "kimi-k2.6"
+protocol = "chat"
+
+[[model]]
+id = "opencode/kimi-k2.7-code"
+connector = "opencode"
+upstream = "kimi-k2.7-code"
+protocol = "chat"
+
+[[model]]
+id = "opencode/kimi-k3"
+connector = "opencode"
+upstream = "kimi-k3"
+protocol = "chat"
+
+[[model]]
+id = "opencode/kimi-k3.1-pro"
+connector = "opencode"
+upstream = "kimi-k3.1-pro"
+protocol = "chat"
+
+[[model]]
+id = "opencode/longcat-2.0"
+connector = "opencode"
+upstream = "longcat-2.0"
+protocol = "chat"
+
+[[model]]
+id = "opencode/mimo-v2.5"
+connector = "opencode"
+upstream = "mimo-v2.5"
+protocol = "chat"
+
+[[model]]
+id = "opencode/mimo-v2.5-pro"
+connector = "opencode"
+upstream = "mimo-v2.5-pro"
+protocol = "chat"
+
+[[model]]
+id = "opencode/mimo-v2.6-flash"
+connector = "opencode"
+upstream = "mimo-v2.6-flash"
+protocol = "chat"
+
+[[model]]
+id = "opencode/mimo-v2.6-pro"
+connector = "opencode"
+upstream = "mimo-v2.6-pro"
+protocol = "chat"
+
+[[model]]
+id = "opencode/minimax-m2.5"
+connector = "opencode"
+upstream = "minimax-m2.5"
+protocol = "chat"
+
+[[model]]
+id = "opencode/minimax-m2.7"
+connector = "opencode"
+upstream = "minimax-m2.7"
+protocol = "chat"
+
+[[model]]
+id = "opencode/minimax-m3"
+connector = "opencode"
+upstream = "minimax-m3"
+protocol = "chat"
+
+[[model]]
+id = "opencode/minimax-m3.1-flash"
+connector = "opencode"
+upstream = "minimax-m3.1-flash"
+protocol = "chat"
+
+[[model]]
+id = "opencode/muse-spark-1.2-contributor"
+connector = "opencode"
+upstream = "muse-spark-1.2-contributor"
+protocol = "chat"
+
+[[model]]
+id = "opencode/muse-spark-1.3-contributor"
+connector = "opencode"
+upstream = "muse-spark-1.3-contributor"
+protocol = "responses"
+
+[[model]]
+id = "opencode/omen-alpha"
+connector = "opencode"
+upstream = "omen-alpha"
+protocol = "chat"
+
+[[model]]
+id = "opencode/qwen3.6-plus"
+connector = "opencode"
+upstream = "qwen3.6-plus"
+protocol = "chat"
+
+[[model]]
+id = "opencode/qwen3.7-max"
+connector = "opencode"
+upstream = "qwen3.7-max"
+protocol = "chat"
+
+[[model]]
+id = "opencode/qwen3.7-plus"
+connector = "opencode"
+upstream = "qwen3.7-plus"
+protocol = "chat"
+
+[[model]]
+id = "opencode/qwen3.8-flash"
+connector = "opencode"
+upstream = "qwen3.8-flash"
+protocol = "chat"
+
+[[model]]
+id = "opencode/qwen3.8-max"
+connector = "opencode"
+upstream = "qwen3.8-max"
+protocol = "chat"
+
+[[model]]
+id = "opencode/step-5-preview"
+connector = "opencode"
+upstream = "step-5-preview"
+protocol = "chat"
+
+
 [[route]]
 match = "devin/*"
 fallbacks = ["opencode/glm-5.3"]

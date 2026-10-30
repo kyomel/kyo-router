@@ -79,6 +79,23 @@ func TestChatPassthrough(t *testing.T) {
 	}
 }
 
+func TestChatForwardsReasoningEffort(t *testing.T) {
+	var captured map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&captured)
+		_, _ = w.Write([]byte(`{"choices":[{"index":0,"message":{"content":"hi"},"finish_reason":"stop"}]}`))
+	}))
+	defer server.Close()
+
+	effort := "high"
+	conn := newTestConnector(t, server, Options{})
+	_ = collect(t, conn, "glm-5.3", models.ChatRequest{Messages: chatMessages(), ReasoningEffort: &effort})
+
+	if captured["reasoning_effort"] != "high" {
+		t.Errorf("reasoning_effort = %v, want high", captured["reasoning_effort"])
+	}
+}
+
 func TestChatFixedSession(t *testing.T) {
 	var sessions []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

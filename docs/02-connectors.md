@@ -130,6 +130,11 @@ Rejected: A (loses data), C (content pollution).
   chat/responses split stays config-driven. `longcat-2.5-preview-free` and
   `space-bunny-free` are gone from the live list. Full verified list:
   docs/05-model-list-proposed.md.
+- `reasoning_effort` forwards verbatim on chat models; the Responses path maps
+  it to `reasoning.effort` + `summary: auto`. Verified live 2026-10-28: every
+  chat id accepts `low`, `medium`, and `high` (33 of 34 return 200;
+  `mimo-v2.5-pro` answers "Unsupported model" upstream for any request); all
+  four responses ids accept `high` through the router.
 
 ### Pair note - session header
 
