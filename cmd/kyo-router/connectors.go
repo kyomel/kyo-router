@@ -42,7 +42,7 @@ func newOpenCodeConnector(oc config.OpenCode, responsesModels []string) (*openco
 // then the mounted credentials file. A custom api_key_env name is surfaced as
 // DEVIN_API_KEY for the lookup, and connectors.devin.base_url acts as a
 // fallback below DEVIN_API_SERVER_URL and the credentials file.
-func newDevinConnector(d config.Devin) (*devin.Connector, error) {
+func newDevinConnector(d config.Devin, knownUpstreams map[string]bool) (*devin.Connector, error) {
 	lookup := os.Getenv
 	if d.APIKeyEnv != "" && d.APIKeyEnv != "DEVIN_API_KEY" {
 		lookup = func(key string) string {
@@ -66,5 +66,6 @@ func newDevinConnector(d config.Devin) (*devin.Connector, error) {
 		IDEVersion:       d.IDEVersion,
 		ExtensionVersion: d.ExtensionVersion,
 		JWTRefreshMargin: d.JWTRefreshMargin.Value(),
+		KnownUpstreams:   knownUpstreams,
 	})
 }

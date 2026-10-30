@@ -125,7 +125,13 @@ func buildBackends(cfg *config.Config) (map[string]connector.Connector, error) {
 		backends["opencode"] = oc
 	}
 	if enabled["devin"] {
-		dev, err := newDevinConnector(cfg.Connectors.Devin)
+		known := map[string]bool{}
+		for _, m := range cfg.Models {
+			if m.Connector == "devin" {
+				known[m.Upstream] = true
+			}
+		}
+		dev, err := newDevinConnector(cfg.Connectors.Devin, known)
 		if err != nil {
 			return nil, err
 		}

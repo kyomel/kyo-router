@@ -66,9 +66,13 @@ Response stream fields: `deltaText`, `deltaThinking` / `deltaSignature`,
   entries and every `fusion-*` uid; a row whose family label names one of
   those is dropped the same way. `auto` is absent from the live list
   (verified 2026-10-26, 0 of 816 uids) - guarded ahead of it, per request.
-- Thinking: effort lives in the uid suffix (`-low`, `-medium`, `-high`).
-  Expose one model per family plus a thinking-level map, like
-  devin-pi-prime does. Claude has no `off`; default falls to medium.
+- Thinking: effort lives in the uid suffix (`-minimal`, `-low`, `-medium`,
+  `-high`, `-xhigh`, `-max`, `-none`) plus variant modifiers (`-fast`, `-1m`,
+  `-priority`, `-lightning`). The catalog exposes every usable uid verbatim
+  (`devin/<uid>`); `fusion-*`, `adaptive`, and `auto` are never served.
+  `reasoning_effort` rewrites the suffix when the target uid is pinned
+  (`internal/devin/effort.go`); unknown targets and plain uids run verbatim.
+  Claude has no `off`; default falls to medium.
 - The OpenAI-compatible AI Gateway (`{api_server_url}/api/v1`) returns 403
   permission_denied on this account. Do not build on it.
 

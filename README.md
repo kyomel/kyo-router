@@ -136,7 +136,7 @@ Precedence: flag > env > config file default. Validation runs once at start. Mis
 | `POST` | `/v1/chat/completions` | live | stream + non-stream; responses-protocol models translated |
 | `POST` | `/v1/responses` | planned | passthrough or translate |
 
-Chat extra field: `reasoning_effort` passes verbatim to DeepSeek (`low|medium|high|xhigh|max`). Devin ignores it (effort is the uid suffix). Reasoning streams as `delta.reasoning_content` and folds into `message.reasoning_content` for non-stream replies.
+Chat extra field: `reasoning_effort` passes verbatim to DeepSeek and OpenCode. Devin rewrites the uid suffix when the target uid is pinned, else runs verbatim. Reasoning streams as `delta.reasoning_content` and folds into `message.reasoning_content` for non-stream replies.
 
 - No auth on the router by default. It binds inside the container and publishes to `127.0.0.1` on the host only.
 - Optional `server.require_api_key_env`: when set, the router checks the client Bearer token against that env value.

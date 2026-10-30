@@ -84,7 +84,7 @@ func fetchAllProviders(ctx context.Context, cfg *config.Config) map[string][]con
 }
 
 func discoverDevin(ctx context.Context, cfg *config.Config) ([]config.Model, error) {
-	conn, err := newDevinConnector(cfg.Connectors.Devin)
+	conn, err := newDevinConnector(cfg.Connectors.Devin, nil)
 	if err != nil {
 		return nil, err
 	}

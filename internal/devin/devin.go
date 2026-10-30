@@ -43,6 +43,7 @@ type Options struct {
 	JWTRefreshMargin time.Duration
 	MaxOutputTokens  int
 	Temperature      float64
+	KnownUpstreams   map[string]bool
 }
 
 // Connector speaks Devin's model API: GetUserJwt for auth, GetChatMessage for
@@ -56,6 +57,7 @@ type Connector struct {
 	extensionVersion string
 	maxOutputTokens  int
 	temperature      float64
+	knownUpstreams   map[string]bool
 }
 
 // New builds a connector. Model-api credentials are required because every
@@ -116,16 +118,18 @@ func New(opts Options) (*Connector, error) {
 		extensionVersion: opts.ExtensionVersion,
 		maxOutputTokens:  opts.MaxOutputTokens,
 		temperature:      opts.Temperature,
+		knownUpstreams:   opts.KnownUpstreams,
 	}, nil
 }
 
-// Chat streams one completion. The upstream uid is passed verbatim, so the
-// effort suffix in the catalog id is the effort Devin runs.
+// Chat streams one completion. reasoning_effort rewrites the uid suffix when
+// the target uid is known; otherwise the upstream uid runs verbatim.
 func (c *Connector) Chat(ctx context.Context, upstream string, req models.ChatRequest, emit connector.Emit) error {
 	if err := connector.ValidateChat(upstream, req); err != nil {
 		return err
 	}
 	emit = connector.EnsureEmit(emit)
+	upstream = EffectiveUpstream(upstream, req.ReasoningEffort, c.knownUpstreams)
 
 	auth, err := c.tokens.Token(ctx)
 	if err != nil {
