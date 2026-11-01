@@ -1,9 +1,17 @@
 # kyo-router - verified model catalog + proposed config list
 
+> 2026-10-31 update: OpenCode Go `/models` now returns 28 ids. Ten pinned ids
+> are gone (400 Model is unavailable or 410 deprecated) and were removed from
+> `config.toml`: `glm-5.1`, `grok-4.6`, `kimi-k2.6`, `mimo-v2.5`,
+> `mimo-v2.5-pro`, `minimax-m2.5`, `minimax-m2.7`, `omen-alpha`,
+> `qwen3.6-plus`, `qwen3.7-max`. Pinned catalog is now 270 (240 Devin +
+> 28 OpenCode + 2 DeepSeek). The OpenCode rows below are the 2026-10-26
+> snapshot.
+
 Date: 2026-10-26. Sources: live probes (curl, this date, keys from .env via
 env only, no values recorded), `devin models list --format json` (CLI
 3000.11.205), docs/02-connectors.md split table (verified 2026-09-29).
-This file is a proposal: config.toml is not edited yet.
+`config.toml` is the source of truth; this file records the verification snapshot.
 
 ## Counts
 
